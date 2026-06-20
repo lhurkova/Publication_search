@@ -21,12 +21,16 @@ package cz.cuni.mff.hurkovalu.publication_search;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  *
  * @author Lucie Hurkova
  */
 public class Publication implements Serializable {
+    
+    public static final int NUM_OF_FEATURES = 5;
+    public static final int[] WEIGHTS = new int[] {10, 5, 2, 2, 1};
     
     private String pubAbstract;
     private Integer year;
@@ -37,6 +41,9 @@ public class Publication implements Serializable {
     private Integer id;
     private String doi;
     private String title;
+    private Map<Integer, Double> titleVector;
+    private Map<Integer, Double> abstractVector;
+    private double[] features = new double[NUM_OF_FEATURES];
 
     public List<Author> getAuthors() {
         return authors;
@@ -121,6 +128,43 @@ public class Publication implements Serializable {
         return ((pubAbstract != null) && (year != null) && (references != null)
                 && (journal != null) && (authors != null) && (id != null)
                 && (title != null));
+    }
+    
+    public void setTitleVector(Map<Integer, Double> titleVector) {
+        this.titleVector = titleVector;
+    }
+
+    public Map<Integer, Double> getTitleVector() {
+        return titleVector;
+    }
+    
+    
+    public void setAbstractVector(Map<Integer, Double> abstractVector) {
+        this.abstractVector = abstractVector;
+    }
+
+    public Map<Integer, Double> getAbstractVector() {
+        return abstractVector;
+    }
+    
+    public void setFeture(double value, int index) {
+        features[index] = value;
+    }
+    
+    public double getFeature(int index) {
+        return features[index];
+    }
+    
+    public double aggregationFunc() {
+        return Publication.aggregationFunc(features);
+    }
+    
+    public static double aggregationFunc(double[] features) {
+        double value = 0;
+        for (int i = 0; i < NUM_OF_FEATURES; i++) {
+            value += features[i] * WEIGHTS[i];
+        }
+        return value;
     }
     
 }
