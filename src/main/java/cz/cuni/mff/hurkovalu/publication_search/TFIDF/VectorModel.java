@@ -133,14 +133,14 @@ public class VectorModel {
         
     }
     
-    public SortedMap<Double, Publication> matchQuery(String query) {
+    public void matchQuery(String query) {
         Map<String, Integer> filteredQuery = processText(query);
         Map<Integer, Double> queryVector = computeTFIDF(filteredQuery);
-        SortedMap<Double, Publication> results = new TreeMap<>();
         for (Publication publication: publications) {
-            results.put(computeCosSimilarity(queryVector, publication.getAbstractVector()), publication);
+            double sim = computeCosSimilarity(queryVector, publication.getAbstractVector());
+            publication.setFeture(computeCosSimilarity(queryVector, publication.getAbstractVector()), 0);
+            publication.setFeture(computeCosSimilarity(queryVector, publication.getTitleVector()), 1);
         }
-        return results;
     }
     
     static public double computeCosSimilarity(Map<Integer, Double> vector1, Map<Integer, Double> vector2) {

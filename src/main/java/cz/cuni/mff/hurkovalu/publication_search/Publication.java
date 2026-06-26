@@ -22,6 +22,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.time.Year;
 
 /**
  *
@@ -30,7 +31,7 @@ import java.util.Map;
 public class Publication implements Serializable {
     
     public static final int NUM_OF_FEATURES = 5;
-    public static final int[] WEIGHTS = new int[] {10, 5, 2, 2, 1};
+    public static final int[] WEIGHTS = new int[] {20, 10, 2, 2, 1}; // abstract, title, age, citations, references
     
     private String pubAbstract;
     private Integer year;
@@ -165,6 +166,29 @@ public class Publication implements Serializable {
             value += features[i] * WEIGHTS[i];
         }
         return value;
+    }
+    
+    public int getAge() {
+        return Year.now().getValue() - year;
+    }
+    
+    public void computeAgeFeature(int minVal, int maxVal) {
+//        double age = Math.log1p(getAge());
+//        double min = Math.log1p(minVal);
+//        double max = Math.log1p(maxVal);
+        features[2] = 1 - normalize(getAge(), minVal, maxVal);
+    }
+    
+    public void computeCiteFeature(int minVal, int maxVal) {
+        features[3] = normalize(citations, minVal, maxVal);
+    }
+    
+    public void computeRefFeature(int minVal, int maxVal) {
+        features[4] = normalize(references, minVal, maxVal);
+    }
+    
+    private static double normalize(double value, double minVal, double maxVal) {
+        return (value - minVal)/(maxVal - minVal);
     }
     
 }

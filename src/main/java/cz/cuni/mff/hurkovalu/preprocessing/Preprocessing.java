@@ -29,6 +29,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
+import javax.xml.XMLConstants;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParserFactory;
 import javax.xml.parsers.SAXParser;
@@ -45,7 +46,14 @@ public class Preprocessing {
     public List<Publication> processDirectory(Path directory) {
         SAXParserFactory saxParserFactory = SAXParserFactory.newInstance();
         try {
+            saxParserFactory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+            saxParserFactory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+            saxParserFactory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+            saxParserFactory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
             SAXParser parser = saxParserFactory.newSAXParser();
+            parser.setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+            parser.setProperty(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
+
             PubMedHandler handler = new PubMedHandler();
             try (Stream<Path> files = Files.walk(directory)) {
                 files.filter(this::checkExtensions)
@@ -58,6 +66,7 @@ public class Preprocessing {
                         });
             }
             handler.computeCitations();
+            handler.computeStaticFeatures();
             List<Publication> publications = handler.getPublications();
             storePublications(publications);
             return publications;

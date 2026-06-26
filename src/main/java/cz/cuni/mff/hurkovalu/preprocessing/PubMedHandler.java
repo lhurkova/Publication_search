@@ -28,6 +28,7 @@ import java.util.Map;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
+import java.time.Year;
 
 /**
  *
@@ -62,6 +63,14 @@ public class PubMedHandler  extends DefaultHandler {
     private String currLastName;
     private String[] currForeNames;
     private String currIdType;
+    
+    int minRef = Integer.MAX_VALUE;
+    int maxRef = 0;
+    int minCite = Integer.MAX_VALUE;
+    int maxCite = 0;
+    int minAge = Integer.MAX_VALUE;
+    int maxAge = 0;
+    int currYear = Year.now().getValue();
     
     private Map<Integer, Integer> citations = new HashMap<>();
     
@@ -154,6 +163,10 @@ public class PubMedHandler  extends DefaultHandler {
             case PUBMED_ARTICLE:
                 if (currPub.isComplete()) {
                     publications.add(currPub);
+                    maxRef = Integer.max(maxRef, currPub.getReferences());
+                    minRef = Integer.min(minRef, currPub.getReferences());
+                    maxAge = Integer.max(maxAge, currPub.getAge());
+                    minAge = Integer.min(minAge, currPub.getAge());
                 }
                 currPub = null;
                 hierarchy = null;
@@ -305,11 +318,21 @@ public class PubMedHandler  extends DefaultHandler {
     
     public void computeCitations() {
         for (Publication p: publications) {
-            Integer citeCount = citations.get(p.getId());
-            if (citeCount == null) {
-                citeCount = 0;
+            int citeCount = 0;
+            if (citations.containsKey(p.getId())) {
+                citeCount = citations.get(p.getId());
             }
+            maxCite = Integer.max(maxCite, citeCount);
+            minCite = Integer.min(minCite, citeCount);
             p.setCitations(citeCount);
+        }
+    }
+    
+    public void computeStaticFeatures() {
+        for (Publication p: publications) {
+            p.computeAgeFeature(minAge, maxAge);
+            p.computeCiteFeature(minCite, maxCite);
+            p.computeRefFeature(minRef, maxRef);
         }
     }
     
