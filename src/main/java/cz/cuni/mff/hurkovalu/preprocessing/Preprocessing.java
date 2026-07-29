@@ -44,7 +44,7 @@ public class Preprocessing {
     private static final String EXTENSION = ".xml.gz";
     
     public List<Publication> processDirectory(Path directory) {
-        SAXParserFactory saxParserFactory = SAXParserFactory.newInstance();
+        SAXParserFactory saxParserFactory = SAXParserFactory.newInstance("com.sun.org.apache.xerces.internal.jaxp.SAXParserFactoryImpl", getClass().getClassLoader());
         try {
             saxParserFactory.setFeature("http://xml.org/sax/features/external-general-entities", false);
             saxParserFactory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);

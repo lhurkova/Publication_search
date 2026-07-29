@@ -16,12 +16,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package cz.cuni.mff.hurkovalu.publication_search.TFIDF;
+package cz.cuni.mff.hurkovalu.publication_search.models;
 
 /**
  *
  * @author Lucie Hurkova
  */
-public record WordInfo(String word, int index, double IDF) {
-
+public interface Model {
+    
+    void processPublications();
+    void matchQuery(String query);
+    
 }

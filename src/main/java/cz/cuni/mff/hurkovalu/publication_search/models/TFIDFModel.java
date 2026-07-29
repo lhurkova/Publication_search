@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package cz.cuni.mff.hurkovalu.publication_search.TFIDF;
+package cz.cuni.mff.hurkovalu.publication_search.models;
 
 import cz.cuni.mff.hurkovalu.publication_search.Publication;
 import java.util.ArrayList;
@@ -25,26 +25,23 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 /**
  *
  * @author Lucie Hurkova
  */
-public class VectorModel {
-    
-    private static final String SPLIT_REGEX = "(\\s|\\.|,|:|;|!|\\?|\\(|\\)|\\[|\\])+";
+public class TFIDFModel implements Model {
     
     private List<Publication> publications;
     private Map<String, WordInfo> wordVector;
     
 
-    public VectorModel(List<Publication> publications) {
+    public TFIDFModel(List<Publication> publications) {
         this.publications = publications;
     }
     
     
+    @Override
     public void processPublications() {
         Map<String, int[]> termOccurences = new HashMap<>();
         List<Map<String, Integer>> filteredAbstracts = new ArrayList<>();
@@ -75,30 +72,26 @@ public class VectorModel {
     }
     
     private Map<String, Integer> processText(String text, Map<String, int[]> termOccurences) {
-        String[] words = text.split(SPLIT_REGEX);
+        List<String> words = WordUtils.getTokens(text);
         Map<String, Integer> documentWords = new HashMap<>();
         for (String word : words) {
-            word = word.toLowerCase().intern();
-            if (!stopWords.contains(word)) {
-                if (!termOccurences.containsKey(word)) {
-                    termOccurences.put(word, new int[2]);
-                }
-                termOccurences.get(word)[0]++;
-                if (!documentWords.containsKey(word)) {
-                    documentWords.put(word, 0);
-                    termOccurences.get(word)[1]++;
-                }
-                documentWords.put(word,(documentWords.get(word)+1));
+            if (!termOccurences.containsKey(word)) {
+                termOccurences.put(word, new int[2]);
             }
+            termOccurences.get(word)[0]++;
+            if (!documentWords.containsKey(word)) {
+                documentWords.put(word, 0);
+                termOccurences.get(word)[1]++;
+            }
+            documentWords.put(word,(documentWords.get(word)+1));
         }
         return documentWords;
     }
     
     private Map<String, Integer> processText(String text) {
-        String[] words = text.split(SPLIT_REGEX);
+        List<String> words = WordUtils.getTokens(text);
         Map<String, Integer> documentWords = new HashMap<>();
         for (String word : words) {
-            word = word.toLowerCase().intern();
             if (wordVector.containsKey(word)) {
                 if (!documentWords.containsKey(word)) {
                     documentWords.put(word, 0);
@@ -133,6 +126,7 @@ public class VectorModel {
         
     }
     
+    @Override
     public void matchQuery(String query) {
         Map<String, Integer> filteredQuery = processText(query);
         Map<Integer, Double> queryVector = computeTFIDF(filteredQuery);
@@ -162,127 +156,6 @@ public class VectorModel {
     }
         
     
-    private Set<String> stopWords = Set.of(
-        "",
-        "i",
-        "me",
-        "my",
-        "myself",
-        "we",
-        "our",
-        "ours",
-        "ourselves",
-        "you",
-        "your",
-        "yours",
-        "yourself",
-        "yourselves",
-        "he",
-        "him",
-        "his",
-        "himself",
-        "she",
-        "her",
-        "hers",
-        "herself",
-        "it",
-        "its",
-        "itself",
-        "they",
-        "them",
-        "their",
-        "theirs",
-        "themselves",
-        "what",
-        "which",
-        "who",
-        "whom",
-        "this",
-        "that",
-        "these",
-        "those",
-        "am",
-        "is",
-        "are",
-        "was",
-        "were",
-        "be",
-        "been",
-        "being",
-        "have",
-        "has",
-        "had",
-        "having",
-        "do",
-        "does",
-        "did",
-        "doing",
-        "a",
-        "an",
-        "the",
-        "and",
-        "but",
-        "if",
-        "or",
-        "because",
-        "as",
-        "until",
-        "while",
-        "of",
-        "at",
-        "by",
-        "for",
-        "with",
-        "about",
-        "against",
-        "between",
-        "into",
-        "through",
-        "during",
-        "before",
-        "after",
-        "above",
-        "below",
-        "to",
-        "from",
-        "up",
-        "down",
-        "in",
-        "out",
-        "on",
-        "off",
-        "over",
-        "under",
-        "again",
-        "further",
-        "then",
-        "once",
-        "here",
-        "there",
-        "when",
-        "where",
-        "why",
-        "how",
-        "all",
-        "any",
-        "both",
-        "each",
-        "few",
-        "more",
-        "most",
-        "other",
-        "some",
-        "such",
-        "so",
-        "than",
-        "s",
-        "t",
-        "can",
-        "will",
-        "just",
-        "don",
-        "should",
-        "now"
-    );
+    
     
 }
