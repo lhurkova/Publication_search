@@ -28,39 +28,33 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Desktop;
 import java.awt.Dimension;
-import java.awt.FontMetrics;
-import java.awt.Graphics;
 import java.awt.Point;
-import java.awt.geom.Point2D;
-import java.awt.geom.Rectangle2D;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComponent;
+import javax.swing.JDialog;
 import javax.swing.JEditorPane;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
 import javax.swing.ToolTipManager;
 import javax.swing.WindowConstants;
 import javax.swing.border.EmptyBorder;
-import javax.swing.border.LineBorder;
 import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
-import javax.swing.text.BadLocationException;
-import javax.swing.text.Document;
 import javax.swing.text.Position;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
-import javax.swing.text.View;
 
 /**
  *
@@ -133,6 +127,7 @@ public class GUI {
         searchPanel.add(searchButton);
 
         mainPanel = new JPanel();
+        mainPanel.setBackground(Color.WHITE);
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.PAGE_AXIS));
         scrollFrame = new JScrollPane(mainPanel);
         scrollFrame.setPreferredSize(new Dimension(sizeX, sizeY));
@@ -153,8 +148,11 @@ public class GUI {
         for (Publication p : topK) {
             mainPanel.add(createResult(p));
         }
+        mainPanel.setPreferredSize(mainPanel.getMaximumSize());
+        mainPanel.invalidate();
         mainPanel.revalidate();
         mainPanel.repaint();
+        SwingUtilities.invokeLater(() -> scrollFrame.getVerticalScrollBar().setValue(0));
     }
 
     private void loadPublications() {
@@ -183,6 +181,8 @@ public class GUI {
         }
         JPanel articlePanel = new JPanel();
         articlePanel.setLayout(new BoxLayout(articlePanel, BoxLayout.PAGE_AXIS));
+        articlePanel.setBorder(new EmptyBorder(10, 5, 10, 5));
+        articlePanel.setBackground(Color.WHITE);
         String content = String.format(HEADER_TEMPLATE, publication.getId(),
                 publication.getTitle(), authorsString.toString(),
                 publication.getJournal(), publication.getYear(), doi);
@@ -199,22 +199,18 @@ public class GUI {
 
         header.setSize(new Dimension(sizeX, 2000));
         header.setMaximumSize(new Dimension(sizeX, header.getPreferredSize().height));
-        // header.setBorder(new EmptyBorder(0, 0, 0, 0));
+        header.setPreferredSize(header.getMaximumSize());
+        header.setBorder(new EmptyBorder(1, 1, 1, 1));
         header.addHyperlinkListener(new HyperlinkListener() {
             @Override
             public void hyperlinkUpdate(HyperlinkEvent e) {
                 if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
-                    if (OPEN_LINK.equals(e.getURL().toString())) {
-                        System.out.println("open");
-                    } else {
-                        if (Desktop.isDesktopSupported()) {
-                            try {
-                                Desktop.getDesktop().browse(e.getURL().toURI());
-                            } catch (IOException | URISyntaxException e1) {
-                                // TODO Auto-generated catch block
-                                e1.printStackTrace();
-                            }
-
+                    if (Desktop.isDesktopSupported()) {
+                        try {
+                            Desktop.getDesktop().browse(e.getURL().toURI());
+                        } catch (IOException | URISyntaxException e1) {
+                            // TODO Auto-generated catch block
+                            e1.printStackTrace();
                         }
                     }
                 }
@@ -228,12 +224,13 @@ public class GUI {
         articleAbstract.setEditable(false);
         StyledDocument document2 = (StyledDocument) articleAbstract.getDocument();
         document2.setParagraphAttributes(0, document.getLength(), a, false);
-        articleAbstract.setBorder(new LineBorder(Color.RED, 1));
+        articleAbstract.setBorder(new EmptyBorder(1,1,1,1));
 
         articleAbstract.setSize(new Dimension(sizeX, 1000));
-        articleAbstract.setMaximumSize(new Dimension(sizeX, articleAbstract.getPreferredSize().height));
+        int height = articleAbstract.getPreferredSize().height;
+        articleAbstract.setMaximumSize(new Dimension(sizeX, height));
 
-        if (articleAbstract.getPreferredSize().height > 100) {
+        if (height > 100) {
             int pos = articleAbstract.getUI().viewToModel2D(articleAbstract, new Point(sizeX, 100), new Position.Bias[1]);
             String shortAbstract = publication.getPubAbstract().substring(0, pos + 1);
             if (shortAbstract.length() < publication.getPubAbstract().trim().length()) {
@@ -248,9 +245,39 @@ public class GUI {
                 document2.setParagraphAttributes(0, document.getLength(), a, false);
                 articleAbstract.setSize(new Dimension(sizeX, 1000));
                 articleAbstract.setMaximumSize(new Dimension(sizeX, articleAbstract.getPreferredSize().height));
+                
+                articleAbstract.setToolTipText("Double click to view the complete abstract");
+                
+                articleAbstract.addMouseListener(new MouseAdapter() {
+                    public void mousePressed(MouseEvent mouseEvent) {
+                        mouseEvent.getSource();
+                        if (mouseEvent.getClickCount() == 2) {
+                            StringBuilder title = new StringBuilder(publication.getAuthors().getFirst().lastName());
+                            if (publication.getAuthors().size() > 1) {
+                                title.append(" et al.");
+                            }
+                            title.append(" ").append("(").append(publication.getYear()).append(")");
+                            JDialog dialog = new JDialog(frame, title.toString());
+                            JEditorPane fullAbstract = new JEditorPane();
+                            fullAbstract.setContentType("text/html");
+                            fullAbstract.setText(String.format(ABSTRACT_TEMPLATE, publication.getPubAbstract()));
+                            fullAbstract.setEditable(false);
+                            StyledDocument document3 = (StyledDocument) fullAbstract.getDocument();
+                            document3.setParagraphAttributes(0, document.getLength(), a, false);
+                            fullAbstract.setBorder(new EmptyBorder(10, 10, 10, 10));
+                            fullAbstract.setSize(new Dimension(sizeX/2, 1000));
+                            articleAbstract.setMaximumSize(new Dimension(sizeX/2, articleAbstract.getPreferredSize().height));
+                            dialog.add(fullAbstract);
+                            dialog.setSize(new Dimension(sizeX/2, articleAbstract.getPreferredSize().height));
+                            dialog.setVisible(true);
+                        }
+                    }
+                });
             }
         }
         
+        articleAbstract.setPreferredSize(articleAbstract.getMaximumSize());
+
         articlePanel.add(header);
         articlePanel.add(articleAbstract);
 
