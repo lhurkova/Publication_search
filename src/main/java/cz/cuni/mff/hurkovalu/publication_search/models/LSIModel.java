@@ -25,11 +25,13 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.commons.math4.legacy.linear.Array2DRowRealMatrix;
@@ -50,62 +52,92 @@ public class LSIModel implements Model {
     private Map<String, Integer> wordVector = new HashMap<>();
     private RealMatrix docConceptMatrix; //documents in columns
     private RealMatrix transformMatrix;
+    private static final String SVD_LIB_PATH = "../svds-C/Tests";
+    private static final String SVD_SCRIPT = "svdstest";
+    private static final String MATRIX_FILE_NAME = "SNAP.dat";
 
     public LSIModel(List<Publication> publications) {
         this.publications = publications;
     }
-    
+
     @Override
     public void processPublications() {
-        
-        try (PrintStream output = new PrintStream(new File("../matrix.txt"))) {
-        OpenMapRealMatrix matrix = new OpenMapRealMatrix(2*publications.size(), 20000);
+
+        OpenMapRealMatrix matrix = new OpenMapRealMatrix(2 * publications.size(), 20000);
         int termIndex = 0;
         int lastWords = 0;
+        int recordsCount = 0;
         //TODO save transposed term document matrix
+        Map<Integer, Map<Integer, Integer>> docTermMatrix = new TreeMap<>(); // first term than doc
         for (int docIndex = 0; docIndex < publications.size(); docIndex++) {
             Publication publication = publications.get(docIndex);
             Set<String> currWords = new HashSet<>();
-            for (String token: WordUtils.getTokens(publication.getPubAbstract())) {
+            for (String token : WordUtils.getTokens(publication.getPubAbstract())) {
                 if (!currWords.contains(token)) {
                     if (!wordVector.containsKey(token)) {
                         wordVector.put(token, termIndex++);
                     }
-                    matrix.setEntry(docIndex*2, wordVector.get(token), 1);
-                    output.println((docIndex*2+1)+" "+(wordVector.get(token)+1)+" "+1);
+                    putValueInMatrixMap(docTermMatrix, wordVector.get(token), docIndex * 2, 1);
+                    recordsCount++;
                     currWords.add(token);
                 }
             }
-            
-            for (String token: WordUtils.getTokens(publication.getTitle())) {
+
+            for (String token : WordUtils.getTokens(publication.getTitle())) {
                 if (!currWords.contains(token)) {
                     if (!wordVector.containsKey(token)) {
                         wordVector.put(token, termIndex++);
                     }
-                    matrix.setEntry(docIndex*2+1, wordVector.get(token), 1);
-                    output.println((docIndex*2+2)+" "+(wordVector.get(token)+1)+" "+1);
+                    putValueInMatrixMap(docTermMatrix, wordVector.get(token), docIndex * 2 + 1, 1);
+                    recordsCount++;
                     currWords.add(token);
                 }
             }
-            System.out.println("Done: "+docIndex+" words "+(wordVector.size()-lastWords));
+            System.out.println("Done: " + docIndex + " words " + (wordVector.size() - lastWords));
             lastWords = wordVector.size();
         }
-            System.out.println(2*publications.size()+" x "+termIndex);
-            File matrixDir = new File("../svds-C/Tests");
-            RealMatrix U = readMatrix(new File(matrixDir, "U"));
-            RealMatrix V = readMatrix(new File(matrixDir, "V"));
-            RealMatrix S = readDiagonalMatrix(new File(matrixDir, "S"));
-            docConceptMatrix = S.multiply(V.transpose());
-            transformMatrix = U.transpose();
+        try (PrintStream output = new PrintStream(new File(SVD_LIB_PATH, MATRIX_FILE_NAME))) {
+            for (Map.Entry<Integer, Map<Integer, Integer>> entry: docTermMatrix.entrySet()) {
+                for(Map.Entry<Integer, Integer> jVal: entry.getValue().entrySet()) {
+                    output.println((entry.getKey()+1)+" "+(jVal.getKey()+1)+" "+jVal.getValue());
+                }
+            }
+            output.flush();
+            String scriptPath = Paths.get(SVD_LIB_PATH, SVD_SCRIPT).toAbsolutePath().toString();
+            ProcessBuilder pb = new ProcessBuilder(scriptPath, Integer.toString(termIndex),
+                    Integer.toString(2 * publications.size()), Integer.toString(recordsCount));
+            pb.inheritIO();
+            pb.directory(new File(scriptPath).getParentFile());
+            Process process = pb.start();
+            try {
+                int exitCode = process.waitFor();
+                System.out.println(termIndex + " x " + 2 * publications.size());
+                File matrixDir = new File(SVD_LIB_PATH);
+                RealMatrix U = readMatrix(new File(matrixDir, "U"));
+                RealMatrix V = readMatrix(new File(matrixDir, "V"));
+                RealMatrix S = readDiagonalMatrix(new File(matrixDir, "S"));
+                docConceptMatrix = S.multiply(V.transpose());
+                transformMatrix = U.transpose();
+            } catch (InterruptedException ex) {
+                Logger.getLogger(LSIModel.class.getName()).log(Level.SEVERE, null, ex);
+            }
         } catch (IOException ex) {
             Logger.getLogger(LSIModel.class.getName()).log(Level.SEVERE, null, ex);
         }
+
     }
-    
+
+    private void putValueInMatrixMap(Map<Integer, Map<Integer, Integer>> matrixMap, int i, int j, int val) {
+        if (!matrixMap.containsKey(i)) {
+            matrixMap.put(i, new TreeMap<>());
+        }
+        matrixMap.get(i).put(j, val);
+    }
+
     @Override
     public void matchQuery(String query) {
         RealVector queryVector = new ArrayRealVector(wordVector.size());
-        for (String token: WordUtils.getTokens(query)) {
+        for (String token : WordUtils.getTokens(query)) {
             if (wordVector.containsKey(token)) {
                 queryVector.setEntry(wordVector.get(token), 1);
             }
@@ -113,22 +145,18 @@ public class LSIModel implements Model {
         queryVector = transformMatrix.operate(queryVector);
         for (int i = 0; i < publications.size(); i++) {
             double absSim = 0;
-            if (docConceptMatrix.getColumnVector(2*i).getNorm() != 0) {
-                absSim = Math.abs(queryVector.cosine(docConceptMatrix.getColumnVector(2*i)));
-            } else {
-                System.out.println("");
+            if (docConceptMatrix.getColumnVector(2 * i).getNorm() != 0) {
+                absSim = Math.abs(queryVector.cosine(docConceptMatrix.getColumnVector(2 * i)));
             }
             publications.get(i).setFeture(absSim, 0);
             double titleSim = 0;
-            if (docConceptMatrix.getColumnVector(2*i+1).getNorm() != 0) {
-                titleSim = Math.abs(queryVector.cosine(docConceptMatrix.getColumnVector(2*i+1)));
-            } else {
-                System.out.println(i);
-            }
+            if (docConceptMatrix.getColumnVector(2 * i + 1).getNorm() != 0) {
+                titleSim = Math.abs(queryVector.cosine(docConceptMatrix.getColumnVector(2 * i + 1)));
+            } 
             publications.get(i).setFeture(titleSim, 1);
         }
     }
-    
+
     private RealMatrix readMatrix(File file) throws FileNotFoundException, IOException {
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
             int rowIndex = 0;
@@ -147,7 +175,7 @@ public class LSIModel implements Model {
             return matrix;
         }
     }
-    
+
     private RealMatrix readDiagonalMatrix(File file) throws FileNotFoundException, IOException {
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
             int index = 0;
@@ -161,9 +189,7 @@ public class LSIModel implements Model {
             }
             return matrix;
         }
-        
+
     }
-        
-        
 
 }
