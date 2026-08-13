@@ -20,6 +20,7 @@ package cz.cuni.mff.hurkovalu.preprocessing;
 
 import cz.cuni.mff.hurkovalu.publication_search.Author;
 import cz.cuni.mff.hurkovalu.publication_search.Publication;
+import cz.cuni.mff.hurkovalu.publication_search.aggregation.Filters;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -71,12 +72,17 @@ public class PubMedHandler  extends DefaultHandler {
     int minAge = Integer.MAX_VALUE;
     int maxAge = 0;
     int currYear = Year.now().getValue();
+    int yearsStart = currYear;
+    int yearsEnd = 0;
     
     private Map<Integer, Integer> citations = new HashMap<>();
     
     private StringBuilder data;
     
     private List<Publication> publications = new ArrayList<>();
+    private Map<String, String> uniqueJournals = new HashMap<>();
+    private Map<Author, Author> uniqueAuthors = new HashMap<>();
+    private Map<String, List<Author>> uniqueSurnames = new HashMap<>();
 
     @Override
     public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
@@ -163,10 +169,35 @@ public class PubMedHandler  extends DefaultHandler {
             case PUBMED_ARTICLE:
                 if (currPub.isComplete()) {
                     publications.add(currPub);
+                    
+                    if (uniqueJournals.containsKey(currPub.getJournal())) {
+                        currPub.setJournal(uniqueJournals.get(currPub.getJournal()));
+                    } else {
+                        uniqueJournals.put(currPub.getJournal(), currPub.getJournal());
+                    }
+                    
+                    List<Author> unifiedAuthors = new ArrayList<>();
+                    
+                    for (Author a: currPub.getAuthors()) {
+                        if (!uniqueAuthors.containsKey(a)) {
+                            uniqueAuthors.put(a, a);
+                        }
+                        
+                        unifiedAuthors.add(uniqueAuthors.get(a));
+                        if (!uniqueSurnames.containsKey(a.lastName())) {
+                            uniqueSurnames.put(a.lastName(), new ArrayList<>());
+                        }
+                        uniqueSurnames.get(a.lastName()).add(uniqueAuthors.get(a));
+                    }
+                    
+                    currPub.setAuthors(unifiedAuthors);
+                    
                     maxRef = Integer.max(maxRef, currPub.getReferences());
                     minRef = Integer.min(minRef, currPub.getReferences());
                     maxAge = Integer.max(maxAge, currPub.getAge());
                     minAge = Integer.min(minAge, currPub.getAge());
+                    yearsStart = Integer.min(yearsStart, currPub.getYear());
+                    yearsEnd = Integer.max(yearsEnd, currPub.getYear());
                 }
                 currPub = null;
                 hierarchy = null;
@@ -338,6 +369,22 @@ public class PubMedHandler  extends DefaultHandler {
     
     public List<Publication> getPublications() {
         return publications;
+    }
+    
+    public Map<String, String> getUniqueJournals() {
+        return uniqueJournals;
+    }
+    
+    public Map<Author, Author> getUniqueAuthors() {
+        return uniqueAuthors;
+    }
+    
+    public Map<String, List<Author>> getUniqueSurnames() {
+        return uniqueSurnames;
+    }
+    
+    public Filters.TimeRange getValidYears() {
+        return new Filters.TimeRange(yearsStart, yearsEnd);
     }
     
 }

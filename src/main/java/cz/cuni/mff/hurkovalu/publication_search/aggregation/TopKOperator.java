@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package cz.cuni.mff.hurkovalu.publication_search.topk_operator;
+package cz.cuni.mff.hurkovalu.publication_search.aggregation;
 
 import cz.cuni.mff.hurkovalu.publication_search.Publication;
 import java.util.ArrayList;
@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
-import javax.print.attribute.HashPrintServiceAttributeSet;
 
 /**
  *

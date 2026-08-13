@@ -19,11 +19,30 @@
 package cz.cuni.mff.hurkovalu.publication_search;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  *
  * @author Lucie Hurkova
  */
 public record Author(String lastName, String[] foreNames) implements Serializable {
-
+    @Override
+    public boolean equals(Object o) {
+        if (o instanceof Author secondAuthor) {
+            if (lastName != null && foreNames != null) {
+                return (this.lastName.equals(secondAuthor.lastName())) &&
+                        Arrays.equals(this.foreNames, secondAuthor.foreNames());
+            }
+        }
+        return false;
+    }
+    
+    @Override
+    public int hashCode() {
+        List<String> allFields = new ArrayList<>(Arrays.asList(foreNames));
+        allFields.add(lastName);
+        return Arrays.hashCode(allFields.toArray());
+    }
 }

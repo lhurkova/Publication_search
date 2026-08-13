@@ -16,14 +16,14 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package cz.cuni.mff.hurkovalu.preprocessing.GUI;
+package cz.cuni.mff.hurkovalu.publication_search;
 
 import cz.cuni.mff.hurkovalu.preprocessing.Preprocessing;
 import cz.cuni.mff.hurkovalu.publication_search.Author;
 import cz.cuni.mff.hurkovalu.publication_search.Publication;
 import cz.cuni.mff.hurkovalu.publication_search.models.LSIModel;
 import cz.cuni.mff.hurkovalu.publication_search.models.Model;
-import cz.cuni.mff.hurkovalu.publication_search.topk_operator.TopKOperator;
+import cz.cuni.mff.hurkovalu.publication_search.aggregation.TopKOperator;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Desktop;
