@@ -18,8 +18,10 @@
  */
 package cz.cuni.mff.hurkovalu.publication_search.aggregation;
 
+import com.sun.xml.bind.v2.schemagen.xmlschema.Import;
 import cz.cuni.mff.hurkovalu.publication_search.Author;
 import cz.cuni.mff.hurkovalu.publication_search.Publication;
+import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.Arrays;
@@ -31,16 +33,20 @@ import java.util.Set;
  *
  * @author Lucie Hurkova
  */
-public class Filters {
+public class Filters implements Serializable {
     
     private Map<Author, Author> uniqueAuthors;
     private Map<String, List<Author>> uniqueSurnames;
     private Map<String, String> uniqueJournals;
+    private TimeRange validYears;
 
-    public Filters(Map<Author, Author> uniqueAuthors, Map<String, List<Author>> uniqueSurnames, Map<String, String> uniqueJournals) {
+    public Filters(Map<Author, Author> uniqueAuthors, Map<String,
+            List<Author>> uniqueSurnames, Map<String, String> uniqueJournals,
+            TimeRange validYears) {
         this.uniqueAuthors = uniqueAuthors;
         this.uniqueSurnames = uniqueSurnames;
         this.uniqueJournals = uniqueJournals;
+        this.validYears = validYears;
     }
     
     public boolean isAuthorValid(String authorString) {
@@ -59,9 +65,22 @@ public class Filters {
         return uniqueJournals.containsKey(journalString);
     }
     
-    public Filter createFilter(String authorString, String journalString) {
+    public boolean isTimeRangeValid(TimeRange years) {
+        return (years.start() >= validYears.start()) && (years.end() <= validYears.end());
+    }
+    
+    public TimeRange getTimeRange() {
+        return validYears;
+    }
+    
+    public Filter createEmptyFilter() {
+        return new Filter(null, null, null);
+    }
+    
+    public Filter createFilter(String authorString, String journalString, TimeRange years) {
         String journal = null;
         Set<Author> authors = null;
+        TimeRange correctYears = null;
         if (isAuthorValid(authorString)) {
             String[] splitAuthor = authorString.split(" ");
             if (splitAuthor.length == 1) {
@@ -77,37 +96,58 @@ public class Filters {
             journal = journalString;
         }
         
-        return new Filter(authors, journal);
+        if (isTimeRangeValid(years)) {
+            correctYears = years;
+        }
+        
+        return new Filter(authors, journal, correctYears);
     }
     
     public class Filter {
         Set<Author> authors;
         String journal;
+        TimeRange years;
         
-        Filter(Set<Author> authors, String journal) {
+        Filter(Set<Author> authors, String journal, TimeRange years) {
             this.authors = authors;
             this.journal = journal;
+            this.years = years;
         }
         
         public boolean apply(Publication p) {
-            if (authors == null) {
-                if (journal == null) {
-                    return true;
-                } else {
-                    return journal.equals(p.getJournal());
-                }
-            } else {
-                boolean result = false;
+            return applyAuthor(p) && applyJournal(p) && applyYears(p);
+        }
+        
+        private boolean applyAuthor(Publication p) {
+           if (authors == null) {
+               return true;
+           } else {
                 for (Author a: p.getAuthors()) {
-                    result = result || authors.contains(a);
+                    if (authors.contains(a)) return true;
                 }
-                if (journal == null) {
-                    return result;
-                } else {
-                    return result && journal.equals(p.getJournal());
-                }
+                return false;
+           }
+        }
+        
+        private boolean applyJournal(Publication p) {
+            if (journal == null) {
+                return true;
+            } else {
+                return journal.equals(p.getJournal());
             }
         }
+        
+        private boolean applyYears(Publication p) {
+            if (years == null) {
+                return true;
+            } else {
+                return (p.getYear() >= years.start()) && (p.getYear() <= years.end());
+            }
+        }
+    }
+    
+    public static record TimeRange(int start, int end) implements Serializable {
+        
     }
     
 }

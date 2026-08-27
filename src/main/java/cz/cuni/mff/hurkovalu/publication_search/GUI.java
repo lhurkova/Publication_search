@@ -19,8 +19,8 @@
 package cz.cuni.mff.hurkovalu.publication_search;
 
 import cz.cuni.mff.hurkovalu.preprocessing.Preprocessing;
-import cz.cuni.mff.hurkovalu.publication_search.Author;
-import cz.cuni.mff.hurkovalu.publication_search.Publication;
+import cz.cuni.mff.hurkovalu.publication_search.aggregation.Aggregation;
+import cz.cuni.mff.hurkovalu.publication_search.aggregation.Filters;
 import cz.cuni.mff.hurkovalu.publication_search.models.LSIModel;
 import cz.cuni.mff.hurkovalu.publication_search.models.Model;
 import cz.cuni.mff.hurkovalu.publication_search.aggregation.TopKOperator;
@@ -38,12 +38,17 @@ import java.nio.file.Paths;
 import java.util.List;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JEditorPane;
 import javax.swing.JFrame;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JSlider;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.ToolTipManager;
@@ -71,6 +76,14 @@ public class GUI {
     private float fontSize = 16;
     private JPanel mainPanel;
     private JScrollPane scrollFrame;
+    private JTextField authorField;
+    private JTextField journalField;
+    private JSlider yearsStart;
+    private JSlider yearsEnd;
+    
+    private FilterDialog mainFilter;
+    private Filters filters;
+    private Filters.Filter currFilter;
 
     private Model model;
     private List<Publication> publications;
@@ -131,6 +144,8 @@ public class GUI {
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.PAGE_AXIS));
         scrollFrame = new JScrollPane(mainPanel);
         scrollFrame.setPreferredSize(new Dimension(sizeX, sizeY));
+        
+        createMenu();
 
         frame.getContentPane().add(searchPanel, BorderLayout.NORTH);
         frame.getContentPane().add(scrollFrame, BorderLayout.CENTER);
@@ -138,12 +153,39 @@ public class GUI {
         frame.setVisible(true);
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
     }
-
+    
+    private void createMenu() {
+        JMenuBar menuBar = new JMenuBar();
+        JMenu applicationMenu = new JMenu("PubMedSearch");
+        JMenu filterMenu = new JMenu("Filter");
+        JMenu modelMenu = new JMenu("Model");
+        menuBar.add(applicationMenu);
+        menuBar.add(filterMenu);
+        menuBar.add(modelMenu);
+        JMenuItem filterItem = new JMenuItem("Add filter...");
+        filterMenu.add(filterItem);
+        filterItem.addActionListener(e -> openFilterDialog());
+        JMenu modelIntem = new JMenu("Select model");
+        JCheckBoxMenuItem tfidfItem = new JCheckBoxMenuItem("TF-IDF", false);
+        JCheckBoxMenuItem lsiItem = new JCheckBoxMenuItem("LSI", true);
+        modelMenu.add(modelIntem);
+        modelIntem.add(tfidfItem);
+        modelIntem.add(lsiItem);
+        frame.setJMenuBar(menuBar);
+    }
+    
+    private void openFilterDialog() {
+        if (mainFilter == null) {
+            mainFilter = new FilterDialog(filters, "Search filters", frame, this);
+        }
+        mainFilter.setVisible(true);
+    }
+        
     private void search() {
         String query = searchField.getText();
         model.matchQuery(query);
-        TopKOperator aggregation = new TopKOperator(publications);
-        List<Publication> topK = aggregation.getTopK(10);
+        Aggregation aggregation = new Aggregation(publications);
+        List<Publication> topK = aggregation.getTopK(10, currFilter);
         mainPanel.removeAll();
         for (Publication p : topK) {
             mainPanel.add(createResult(p));
@@ -159,6 +201,8 @@ public class GUI {
         Path directory = Paths.get("..");
         Preprocessing preprocessing = new Preprocessing();
         publications = preprocessing.processDirectory(directory);
+        filters = preprocessing.getFilters();
+        currFilter = filters.createEmptyFilter();
         model = new LSIModel(publications);
         model.processPublications();
         System.out.println("Publications Loaded");
@@ -282,6 +326,10 @@ public class GUI {
         articlePanel.add(articleAbstract);
 
         return articlePanel;
+    }
+    
+    public void setCurrentFilter(Filters.Filter filter) {
+        currFilter = filter;
     }
 
 }

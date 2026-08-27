@@ -59,8 +59,9 @@ public class Aggregation {
                 }
             }
         }
+        int resSize = results.size();
         List<Publication> resultsList = new ArrayList<>();
-        for (int j = 0; j < k; j++) {
+        for (int j = 0; j < resSize; j++) {
             resultsList.add(results.poll());
         }
         return resultsList.reversed();
