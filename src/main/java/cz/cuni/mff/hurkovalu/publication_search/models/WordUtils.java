@@ -32,14 +32,14 @@ import java.util.regex.Pattern;
 public class WordUtils {
     
     private static final String REGEX = "[a-zA-Z]\\w*";
-    private static final Pattern REGEX__PATTERN = Pattern.compile(REGEX);
+    private static final Pattern REGEX_PATTERN = Pattern.compile(REGEX);
     
     public static List<String> getTokens(String text) {
         List<String> words = new ArrayList<>();
         Document document = new Document(text);
         for (Sentence s: document.sentences()) {
             for (String lemma: s.lemmas()) {
-                if (!STOP_WORDS.contains(lemma) && REGEX__PATTERN.matcher(lemma).matches()) {
+                if (!STOP_WORDS.contains(lemma) && REGEX_PATTERN.matcher(lemma).matches()) {
                     words.add(lemma.toLowerCase().intern());
                 }
             }
