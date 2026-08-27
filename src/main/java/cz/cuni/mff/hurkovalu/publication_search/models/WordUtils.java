@@ -26,7 +26,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
- *
+ * Class containing methods for working with text.
  * @author Lucie Hurkova
  */
 public class WordUtils {
@@ -34,6 +34,11 @@ public class WordUtils {
     private static final String REGEX = "[a-zA-Z]\\w*";
     private static final Pattern REGEX_PATTERN = Pattern.compile(REGEX);
     
+    /**
+     * Splits the text into terms, discards stop words and apply lemmatization.
+     * @param text text to be processed
+     * @return text split into terms
+     */
     public static List<String> getTokens(String text) {
         List<String> words = new ArrayList<>();
         Document document = new Document(text);

@@ -32,7 +32,7 @@ import org.xml.sax.helpers.DefaultHandler;
 import java.time.Year;
 
 /**
- *
+ * Class for reading and obtaining information from PubMed XML files.
  * @author Lucie Hurkova
  */
 public class PubMedHandler  extends DefaultHandler {
@@ -363,6 +363,9 @@ public class PubMedHandler  extends DefaultHandler {
         data.append(ch, start, length);
     }
     
+    /**
+     * Computes citation of each publication based on read references.
+     */
     public void computeCitations() {
         for (Publication p: publications) {
             int citeCount = 0;
@@ -375,6 +378,9 @@ public class PubMedHandler  extends DefaultHandler {
         }
     }
     
+    /**
+     * Computes citation, reference and age feature for each read publication.
+     */
     public void computeStaticFeatures() {
         for (Publication p: publications) {
             p.computeAgeFeature(minAge, maxAge);
@@ -383,22 +389,42 @@ public class PubMedHandler  extends DefaultHandler {
         }
     }
     
+    /**
+     * Gets valid read publications.
+     * @return read publications
+     */
     public List<Publication> getPublications() {
         return publications;
     }
     
+    /**
+     * Gets read unique journals from valid publications.
+     * @return read unique journals
+     */
     public Map<String, String> getUniqueJournals() {
         return uniqueJournals;
     }
     
+    /**
+     * Gets read unique authors from valid publications.
+     * @return read unique authors
+     */
     public Map<Author, Author> getUniqueAuthors() {
         return uniqueAuthors;
     }
     
+    /**
+     * Gets read unique surnames and corresponding author from valid publications.
+     * @return unique surnames and corresponding author
+     */
     public Map<String, List<Author>> getUniqueSurnames() {
         return uniqueSurnames;
     }
     
+    /**
+     * Gets the publication time range.
+     * @return publication time range
+     */
     public Filters.TimeRange getValidYears() {
         return new Filters.TimeRange(yearsStart, yearsEnd);
     }

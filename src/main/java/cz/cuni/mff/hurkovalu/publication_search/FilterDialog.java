@@ -34,7 +34,7 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
 /**
- *
+ * Class representing a dialog for search filters selection.
  * @author Lucie Hurkova
  */
 public class FilterDialog {
@@ -53,6 +53,13 @@ public class FilterDialog {
     private boolean startCorrect = true;
     private boolean endCorrect = true;
 
+    /**
+     * Creates a new {@link FilterDialog} with given filter options, dialog title, parent frame and parent GUI.
+     * @param filters filter options
+     * @param title title of the dialog
+     * @param homeFrame parent frame
+     * @param gui parent GUI
+     */
     public FilterDialog(Filters filters, String title, Frame homeFrame, GUI gui) {
         this.filters = filters;
         this.gui = gui;
@@ -303,6 +310,10 @@ public class FilterDialog {
         changeButtonState();
     }
     
+    /**
+     * Sets visibility of the dialog.
+     * @param b visibility
+     */
     public void setVisible(boolean b) {
         dialog.setVisible(b);
     }

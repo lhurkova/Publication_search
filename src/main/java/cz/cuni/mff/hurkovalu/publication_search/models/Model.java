@@ -19,12 +19,20 @@
 package cz.cuni.mff.hurkovalu.publication_search.models;
 
 /**
- *
+ * Interface representing a vector search model.
  * @author Lucie Hurkova
  */
 public interface Model {
     
+    /**
+     * Computes the vectors for all titles and abstracts of the publications in the database.
+     */
     void processPublications();
+    
+    /**
+     * Computes the cosine similarity between each publication and the given query.
+     * @param query query to be searched in the database
+     */
     void matchQuery(String query);
     
 }

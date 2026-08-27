@@ -69,7 +69,7 @@ import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
 
 /**
- *
+ * Class representing the graphical user interface of the PubMed Search app.
  * @author Lucie Hurkova
  */
 public class GUI {
@@ -117,12 +117,21 @@ public class GUI {
                                           </html>                            
                                           """;
 
+    /**
+     * Creates a new instance of the {@link GUI}
+     * @param sizeX width of the window
+     * @param sizeY height of the window
+     * @param name name of the window
+     */
     public GUI(int sizeX, int sizeY, String name) {
         this.sizeX = sizeX;
         this.sizeY = sizeY;
         this.name = name;
     }
-
+    
+    /**
+     * Initializes all graphical components in the {@GUI} and loads the database.
+     */
     public void createGUI() {
         //System.setProperty("apple.laf.useScreenMenuBar", "true");
         ToolTipManager.sharedInstance().setInitialDelay(100);
@@ -380,6 +389,10 @@ public class GUI {
         return articlePanel;
     }
     
+    /**
+     * Sets {@link Filters.Filter} to be used for the next search.
+     * @param filter 
+     */
     public void setCurrentFilter(Filters.Filter filter) {
         currFilter = filter;
     }

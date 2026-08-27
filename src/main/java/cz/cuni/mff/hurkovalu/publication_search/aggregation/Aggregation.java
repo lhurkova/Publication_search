@@ -25,16 +25,26 @@ import java.util.PriorityQueue;
 import java.util.Queue;
 
 /**
- *
+ * Class computing the aggregated results of the search.
  * @author Lucie Hurkova
  */
 public class Aggregation {
     private List<Publication> publications;
     
+    /**
+     * Creates a new instance of {@link Aggregation} with given publications.
+     * @param publications 
+     */
     public Aggregation(List<Publication> publications) {
         this.publications = publications;
     }
     
+    /**
+     * Gets k publications with best aggregation results.
+     * @param k number of publications to be returned
+     * @param filter filter applied on the publications
+     * @return k publications with best aggregation results
+     */
     public List<Publication> getTopK(int k, Filters.Filter filter) {
         Queue<Publication> results = new PriorityQueue<>(
                 (p1, p2) -> Double.compare(p1.aggregationFunc(), p2.aggregationFunc())

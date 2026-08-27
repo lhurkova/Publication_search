@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- *
+ * Class computing the TF-IDF model.
  * @author Lucie Hurkova
  */
 public class TFIDFModel implements Model {
@@ -40,7 +40,9 @@ public class TFIDFModel implements Model {
         this.publications = publications;
     }
     
-    
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void processPublications() {
         Map<String, int[]> termOccurences = new HashMap<>();
@@ -126,6 +128,9 @@ public class TFIDFModel implements Model {
         
     }
     
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void matchQuery(String query) {
         Map<String, Integer> filteredQuery = processText(query);
@@ -137,6 +142,12 @@ public class TFIDFModel implements Model {
         }
     }
     
+    /**
+     * Computes the cosine similarity between the given vectors.
+     * @param vector1 first vector
+     * @param vector2 second vector
+     * @return cosine similarity between the given vectors
+     */
     static public double computeCosSimilarity(Map<Integer, Double> vector1, Map<Integer, Double> vector2) {
         Set<Integer> intersection = new HashSet<>(vector1.keySet());
         intersection.retainAll(vector2.keySet());

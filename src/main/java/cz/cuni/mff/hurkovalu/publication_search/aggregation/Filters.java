@@ -18,7 +18,6 @@
  */
 package cz.cuni.mff.hurkovalu.publication_search.aggregation;
 
-import com.sun.xml.bind.v2.schemagen.xmlschema.Import;
 import cz.cuni.mff.hurkovalu.publication_search.Author;
 import cz.cuni.mff.hurkovalu.publication_search.Publication;
 import java.io.Serializable;
@@ -30,7 +29,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- *
+ * Class for verifying the filter inputs and for creating new filters.
  * @author Lucie Hurkova
  */
 public class Filters implements Serializable {
@@ -39,7 +38,14 @@ public class Filters implements Serializable {
     private Map<String, List<Author>> uniqueSurnames;
     private Map<String, String> uniqueJournals;
     private TimeRange validYears;
-
+    
+    /**
+     * Creates a new instance of {@link Filters} with given unique authors, unique authors surnames, unique journals and valid time range.
+     * @param uniqueAuthors unique authors
+     * @param uniqueSurnames unique authors surnames
+     * @param uniqueJournals unique journals
+     * @param validYears valid time range
+     */
     public Filters(Map<Author, Author> uniqueAuthors, Map<String,
             List<Author>> uniqueSurnames, Map<String, String> uniqueJournals,
             TimeRange validYears) {
@@ -49,6 +55,11 @@ public class Filters implements Serializable {
         this.validYears = validYears;
     }
     
+    /**
+     * Returns true if the given String represents a valid name of a author that exists in the database.
+     * @param authorString String containing the name of the author
+     * @return true if the given String represents a valid name of a author
+     */
     public boolean isAuthorValid(String authorString) {
         String[] splitInput = authorString.split(" ");
         if (splitInput.length == 1) {
@@ -61,22 +72,47 @@ public class Filters implements Serializable {
         return false;
     }
     
+    /**
+     * Returns true if the given String represents a valid name of a journal that exists in the database.
+     * @param journalString String containing the name of the journal
+     * @return true if the given String represents a valid name of a journal
+     */
     public boolean isJournalValid(String journalString) {
         return uniqueJournals.containsKey(journalString);
     }
     
+    /**
+     * Returns true if the given time range is inside of the time range of the database.
+     * @param years time range
+     * @return true if the given time range is inside of the time range of the database
+     */
     public boolean isTimeRangeValid(TimeRange years) {
         return (years.start() >= validYears.start()) && (years.end() <= validYears.end());
     }
     
+    /**
+     * Gets the time range of the database.
+     * @return time range of the database
+     */
     public TimeRange getTimeRange() {
         return validYears;
     }
     
+    /**
+     * Creates a filter with default options.
+     * @return filter with default options
+     */
     public Filter createEmptyFilter() {
         return new Filter(null, null, null);
     }
     
+    /**
+     * Creates a filter with given constrains.
+     * @param authorString name of the author
+     * @param journalString name of the journal
+     * @param years time range of the publication
+     * @return filter with given constrains
+     */
     public Filter createFilter(String authorString, String journalString, TimeRange years) {
         String journal = null;
         Set<Author> authors = null;
@@ -103,6 +139,9 @@ public class Filters implements Serializable {
         return new Filter(authors, journal, correctYears);
     }
     
+    /**
+     * Class representing a single filter applied on publications.
+     */
     public class Filter {
         Set<Author> authors;
         String journal;
@@ -114,6 +153,11 @@ public class Filters implements Serializable {
             this.years = years;
         }
         
+        /**
+         * Returns true if the filter applies on the given publication.
+         * @param p publication
+         * @return true if the filter applies on the given publication
+         */
         public boolean apply(Publication p) {
             return applyAuthor(p) && applyJournal(p) && applyYears(p);
         }

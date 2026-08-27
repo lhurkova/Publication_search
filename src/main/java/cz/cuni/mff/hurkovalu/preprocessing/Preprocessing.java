@@ -37,7 +37,7 @@ import javax.xml.parsers.SAXParser;
 import org.xml.sax.SAXException;
 
 /**
- *
+ * Class for preprocessing of the database XML files.
  * @author Lucie Hurkova
  */
 public class Preprocessing {
@@ -45,6 +45,11 @@ public class Preprocessing {
     private static final String EXTENSION = ".xml.gz";
     private Filters filters;
     
+    /**
+     * Reads all XML files in the given directory and returns all valid publications described in the files.
+     * @param directory directory containing XML files
+     * @return valid publications
+     */
     public List<Publication> processDirectory(Path directory) {
         SAXParserFactory saxParserFactory = SAXParserFactory.newInstance("com.sun.org.apache.xerces.internal.jaxp.SAXParserFactoryImpl", getClass().getClassLoader());
         try {
@@ -106,6 +111,10 @@ public class Preprocessing {
         }
     }
     
+    /**
+     * Returns {@link Filters} created during processing of the directory.
+     * @return {@link Filters} created during processing of the directory
+     */
     public Filters getFilters() {
         return filters;
     }

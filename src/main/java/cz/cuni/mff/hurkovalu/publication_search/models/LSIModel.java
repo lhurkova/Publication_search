@@ -42,7 +42,7 @@ import org.apache.commons.math4.legacy.linear.RealMatrix;
 import org.apache.commons.math4.legacy.linear.RealVector;
 
 /**
- *
+ * Class computing the Latent Semantic Indexing model.
  * @author Lucie Hurkova
  */
 public class LSIModel implements Model {
