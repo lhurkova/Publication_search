@@ -34,12 +34,12 @@ public class Publication implements Serializable {
     public static final int[] WEIGHTS = new int[] {20, 10, 2, 2, 1}; // abstract, title, age, citations, references
     
     private String pubAbstract;
-    private Integer year;
-    private Integer references;
-    private Integer citations;
+    private int year;
+    private int references;
+    private int citations;
     private String journal;
     private List<Author> authors;
-    private Integer id;
+    private int id;
     private String doi;
     private String title;
     private Map<Integer, Double> titleVector;
@@ -126,8 +126,8 @@ public class Publication implements Serializable {
     }
     
     public boolean isComplete() {
-        return ((pubAbstract != null) && (year != null) && (references != null)
-                && (journal != null) && (authors != null) && (id != null)
+        return ((pubAbstract != null) && (year != 0) && (references != 0)
+                && (journal != null) && (authors != null) && (id != 0)
                 && (title != null));
     }
     

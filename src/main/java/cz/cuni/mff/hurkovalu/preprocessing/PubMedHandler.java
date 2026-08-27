@@ -85,6 +85,17 @@ public class PubMedHandler  extends DefaultHandler {
     private Map<String, List<Author>> uniqueSurnames = new HashMap<>();
 
     @Override
+    public void startDocument() throws SAXException {
+        hierarchy = null;
+        currPub = null;
+        refCount = 0;
+        currLastName = null;
+        currForeNames = null;
+        currIdType = null;
+    }
+     
+
+    @Override
     public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
         switch (qName) {
             case PUBMED_ARTICLE:
@@ -145,7 +156,7 @@ public class PubMedHandler  extends DefaultHandler {
                 }
                 break;
             case REFERENCE_LIST:
-                if (PUBMED_DATA.equals(hierarchy.getLast())) {
+                if (PUBMED_DATA.equals(hierarchy.getLast()) || REFERENCE_LIST.equals(hierarchy.getLast())) {
                     hierarchy.add(REFERENCE_LIST);
                 }
                 break;
@@ -302,12 +313,15 @@ public class PubMedHandler  extends DefaultHandler {
                     if (REFERENCE.equals(hierarchy.get(hierarchy.size() - 2))) {
                         refCount++;
                         if (PUBMED.equals(currIdType)) {
-                            int id = Integer.parseInt(data.toString());
+                            try {
+                            int id = Integer.parseInt(data.toString().strip());
                             Integer citeCount = citations.get(id);
                             if (citeCount == null) {
                                 citations.put(id, 1);
                             } else {
                                 citations.put(id, citeCount+1);
+                            }} catch (NumberFormatException e) {
+                                System.out.println("Number error "+data);
                             }
                         }
                     } else {
@@ -325,8 +339,10 @@ public class PubMedHandler  extends DefaultHandler {
                 break;
             case REFERENCE_LIST:
                 if (REFERENCE_LIST.equals(last_element)) {
-                    currPub.setReferences(refCount);
-                    refCount = 0;
+                    if (PUBMED_DATA.equals(hierarchy.get(hierarchy.size()-2))) {
+                        currPub.setReferences(refCount);
+                        refCount = 0;
+                    }
                     hierarchy.removeLast();
                 } else {
                     throw new AssertionError("Expected: "+REFERENCE_LIST+", got: "+last_element);

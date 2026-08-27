@@ -19,6 +19,7 @@
 package cz.cuni.mff.hurkovalu.preprocessing;
 
 import cz.cuni.mff.hurkovalu.publication_search.Publication;
+import cz.cuni.mff.hurkovalu.publication_search.aggregation.Filters;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -42,6 +43,7 @@ import org.xml.sax.SAXException;
 public class Preprocessing {
     
     private static final String EXTENSION = ".xml.gz";
+    private Filters filters;
     
     public List<Publication> processDirectory(Path directory) {
         SAXParserFactory saxParserFactory = SAXParserFactory.newInstance("com.sun.org.apache.xerces.internal.jaxp.SAXParserFactoryImpl", getClass().getClassLoader());
@@ -69,6 +71,9 @@ public class Preprocessing {
             handler.computeStaticFeatures();
             List<Publication> publications = handler.getPublications();
             storePublications(publications);
+            filters = new Filters(handler.getUniqueAuthors(), handler.getUniqueSurnames(),
+                    handler.getUniqueJournals(), handler.getValidYears());
+            storeFilters(filters);
             return publications;
         } catch (ParserConfigurationException | SAXException | IOException e) {
             e.printStackTrace();
@@ -85,9 +90,23 @@ public class Preprocessing {
         try (FileOutputStream file = new FileOutputStream("/tmp/publications.ser");
                 ObjectOutputStream out = new ObjectOutputStream(file)) {
             out.writeObject(publications);
-            System.out.println("Object has been serialized");
+            System.out.println("Publications has been serialized");
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+    
+    private void storeFilters(Filters filters) {
+        try (FileOutputStream file = new FileOutputStream("/tmp/filters.ser");
+                ObjectOutputStream out = new ObjectOutputStream(file)) {
+            out.writeObject(filters);
+            System.out.println("Filters has been serialized");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    
+    public Filters getFilters() {
+        return filters;
     }
 }
