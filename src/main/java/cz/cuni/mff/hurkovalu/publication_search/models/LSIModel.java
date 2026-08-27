@@ -60,6 +60,9 @@ public class LSIModel implements Model {
         this.publications = publications;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void processPublications() {
 
@@ -133,7 +136,10 @@ public class LSIModel implements Model {
         }
         matrixMap.get(i).put(j, val);
     }
-
+    
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void matchQuery(String query) {
         RealVector queryVector = new ArrayRealVector(wordVector.size());
