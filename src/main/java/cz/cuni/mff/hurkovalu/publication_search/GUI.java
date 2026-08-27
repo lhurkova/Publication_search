@@ -23,12 +23,15 @@ import cz.cuni.mff.hurkovalu.publication_search.aggregation.Aggregation;
 import cz.cuni.mff.hurkovalu.publication_search.aggregation.Filters;
 import cz.cuni.mff.hurkovalu.publication_search.models.LSIModel;
 import cz.cuni.mff.hurkovalu.publication_search.models.Model;
-import cz.cuni.mff.hurkovalu.publication_search.aggregation.TopKOperator;
+import cz.cuni.mff.hurkovalu.publication_search.models.TFIDFModel;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Desktop;
 import java.awt.Dimension;
+import java.awt.GridBagLayout;
 import java.awt.Point;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.IOException;
@@ -37,16 +40,19 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import javax.swing.BoxLayout;
+import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JEditorPane;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
+import javax.swing.JRadioButtonMenuItem;
 import javax.swing.JScrollPane;
 import javax.swing.JSlider;
 import javax.swing.JTextField;
@@ -54,6 +60,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.ToolTipManager;
 import javax.swing.WindowConstants;
 import javax.swing.border.EmptyBorder;
+import javax.swing.event.ChangeListener;
 import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
 import javax.swing.text.Position;
@@ -76,16 +83,21 @@ public class GUI {
     private float fontSize = 16;
     private JPanel mainPanel;
     private JScrollPane scrollFrame;
+    private JPanel noResultsPanel;
     private JTextField authorField;
     private JTextField journalField;
     private JSlider yearsStart;
     private JSlider yearsEnd;
+    private JRadioButtonMenuItem tfidfItem;
+    private JRadioButtonMenuItem lsiItem;
     
     private FilterDialog mainFilter;
     private Filters filters;
     private Filters.Filter currFilter;
 
-    private Model model;
+    private Model currModel;
+    private LSIModel lsiModel;
+    private TFIDFModel tfidfModel;
     private List<Publication> publications;
 
     private static String OPEN_LINK = "open";
@@ -145,6 +157,16 @@ public class GUI {
         scrollFrame = new JScrollPane(mainPanel);
         scrollFrame.setPreferredSize(new Dimension(sizeX, sizeY));
         
+        noResultsPanel = new JPanel();
+        noResultsPanel.setLayout(new GridBagLayout());
+        noResultsPanel.setSize(new Dimension(sizeX, sizeY/2));
+        noResultsPanel.setMaximumSize(new Dimension(sizeX, sizeY/2));
+        noResultsPanel.setPreferredSize(new Dimension(sizeX, sizeY/2));
+        noResultsPanel.setBackground(Color.WHITE);
+        JLabel noResLabel = new JLabel("No results found");
+        noResLabel.setFont(noResLabel.getFont().deriveFont(fontSize));
+        noResultsPanel.add(noResLabel);
+        
         createMenu();
 
         frame.getContentPane().add(searchPanel, BorderLayout.NORTH);
@@ -156,21 +178,44 @@ public class GUI {
     
     private void createMenu() {
         JMenuBar menuBar = new JMenuBar();
-        JMenu applicationMenu = new JMenu("PubMedSearch");
+        JMenu applicationMenu = new JMenu("PubMed Search");
         JMenu filterMenu = new JMenu("Filter");
         JMenu modelMenu = new JMenu("Model");
         menuBar.add(applicationMenu);
         menuBar.add(filterMenu);
         menuBar.add(modelMenu);
+        
+        JMenuItem quitItem = new JMenuItem("Quit PubMed Search");
+        applicationMenu.add(quitItem);
+        quitItem.addActionListener(e -> System.exit(0));
+        
         JMenuItem filterItem = new JMenuItem("Add filter...");
         filterMenu.add(filterItem);
         filterItem.addActionListener(e -> openFilterDialog());
+        
         JMenu modelIntem = new JMenu("Select model");
-        JCheckBoxMenuItem tfidfItem = new JCheckBoxMenuItem("TF-IDF", false);
-        JCheckBoxMenuItem lsiItem = new JCheckBoxMenuItem("LSI", true);
+        tfidfItem = new JRadioButtonMenuItem("TF-IDF");
+        lsiItem = new JRadioButtonMenuItem("LSI", true);
+        ButtonGroup group = new ButtonGroup();
+        group.add(tfidfItem);
+        group.add(lsiItem);
+        
+        lsiItem.addActionListener((ActionEvent e) -> {
+            if (lsiItem.isSelected()) {
+                currModel = lsiModel;
+            }
+        });
+        
+        tfidfItem.addActionListener((ActionEvent e) -> {
+            if (tfidfItem.isSelected()) {
+                currModel = tfidfModel;
+            }
+        });
+        
         modelMenu.add(modelIntem);
         modelIntem.add(tfidfItem);
         modelIntem.add(lsiItem);
+        
         frame.setJMenuBar(menuBar);
     }
     
@@ -183,12 +228,16 @@ public class GUI {
         
     private void search() {
         String query = searchField.getText();
-        model.matchQuery(query);
+        currModel.matchQuery(query);
         Aggregation aggregation = new Aggregation(publications);
         List<Publication> topK = aggregation.getTopK(10, currFilter);
         mainPanel.removeAll();
-        for (Publication p : topK) {
-            mainPanel.add(createResult(p));
+        if (topK.isEmpty()) {
+            mainPanel.add(noResultsPanel);
+        } else {
+            for (Publication p : topK) {
+                mainPanel.add(createResult(p));
+            }
         }
         mainPanel.setPreferredSize(mainPanel.getMaximumSize());
         mainPanel.invalidate();
@@ -203,8 +252,11 @@ public class GUI {
         publications = preprocessing.processDirectory(directory);
         filters = preprocessing.getFilters();
         currFilter = filters.createEmptyFilter();
-        model = new LSIModel(publications);
-        model.processPublications();
+        lsiModel = new LSIModel(publications);
+        lsiModel.processPublications();
+        tfidfModel = new TFIDFModel(publications);
+        tfidfModel.processPublications();
+        currModel = lsiModel;
         System.out.println("Publications Loaded");
     }
 
