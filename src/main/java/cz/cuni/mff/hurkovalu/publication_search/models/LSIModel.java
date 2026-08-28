@@ -47,6 +47,7 @@ import org.apache.commons.math4.legacy.linear.RealVector;
  */
 public class LSIModel implements Model {
 
+    private static final Logger LOGGER = Logger.getLogger(LSIModel.class.getName());
     private static final int K = 50;
     private List<Publication> publications;
     private Map<String, Integer> wordVector = new HashMap<>();
@@ -55,6 +56,9 @@ public class LSIModel implements Model {
     private static final String SVD_LIB_PATH = "../svds-C/Tests";
     private static final String SVD_SCRIPT = "svdstest";
     private static final String MATRIX_FILE_NAME = "SNAP.dat";
+    
+    private volatile int processedPublications;
+    private volatile boolean publicationsProcessed = false;
 
     public LSIModel(List<Publication> publications) {
         this.publications = publications;
@@ -65,12 +69,10 @@ public class LSIModel implements Model {
      */
     @Override
     public void processPublications() {
-
         OpenMapRealMatrix matrix = new OpenMapRealMatrix(2 * publications.size(), 20000);
         int termIndex = 0;
         int lastWords = 0;
         int recordsCount = 0;
-        //TODO save transposed term document matrix
         Map<Integer, Map<Integer, Integer>> docTermMatrix = new TreeMap<>(); // first term than doc
         for (int docIndex = 0; docIndex < publications.size(); docIndex++) {
             Publication publication = publications.get(docIndex);
@@ -98,7 +100,9 @@ public class LSIModel implements Model {
             }
             System.out.println("Done: " + docIndex + " words " + (wordVector.size() - lastWords));
             lastWords = wordVector.size();
+            processedPublications++;
         }
+        publicationsProcessed = true;
         try (PrintStream output = new PrintStream(new File(SVD_LIB_PATH, MATRIX_FILE_NAME))) {
             for (Map.Entry<Integer, Map<Integer, Integer>> entry: docTermMatrix.entrySet()) {
                 for(Map.Entry<Integer, Integer> jVal: entry.getValue().entrySet()) {
@@ -122,10 +126,10 @@ public class LSIModel implements Model {
                 docConceptMatrix = S.multiply(V.transpose());
                 transformMatrix = U.transpose();
             } catch (InterruptedException ex) {
-                Logger.getLogger(LSIModel.class.getName()).log(Level.SEVERE, null, ex);
+                LOGGER.log(Level.SEVERE, null, ex);
             }
         } catch (IOException ex) {
-            Logger.getLogger(LSIModel.class.getName()).log(Level.SEVERE, null, ex);
+            LOGGER.log(Level.SEVERE, null, ex);
         }
 
     }
@@ -196,6 +200,12 @@ public class LSIModel implements Model {
             return matrix;
         }
 
+    }
+    
+    public int getProgress() {
+        if (publicationsProcessed) return -1;
+        if (publications.isEmpty()) return 0;
+        return (processedPublications * 100)/publications.size();
     }
 
 }

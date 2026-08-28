@@ -34,6 +34,10 @@ public class TFIDFModel implements Model {
     
     private List<Publication> publications;
     private Map<String, WordInfo> wordVector;
+    private volatile int processedPublications;
+    private volatile int termsRead;
+    private volatile int vectorsComputed;
+    private volatile int termsCount = -1;
     
 
     public TFIDFModel(List<Publication> publications) {
@@ -51,11 +55,13 @@ public class TFIDFModel implements Model {
         for (Publication p: publications) {
             filteredAbstracts.add(processText(p.getPubAbstract(), termOccurences));
             filteredTitles.add(processText(p.getTitle(), termOccurences));
+            processedPublications++;
         }
         
         int index = 0;
         int documentCount = filteredAbstracts.size() + filteredTitles.size();
         wordVector = new HashMap<>();
+        termsCount = termOccurences.size();
         for (Map.Entry<String, int[]> entry : termOccurences.entrySet()) {
             String word = entry.getKey();
             int[] occurences = entry.getValue();
@@ -64,12 +70,14 @@ public class TFIDFModel implements Model {
                 wordVector.put(word, new WordInfo(word, index, idf));
                 index++;
             }
+            termsRead++;
         }
         
         for (int i = 0; i < publications.size(); i++) {
             Publication publication = publications.get(i);
             publication.setAbstractVector(computeTFIDF(filteredAbstracts.get(i)));
             publication.setTitleVector(computeTFIDF(filteredTitles.get(i)));
+            vectorsComputed++;
         }
     }
     
@@ -166,7 +174,10 @@ public class TFIDFModel implements Model {
         return Math.sqrt(size);
     }
         
-    
+    public int getProgress() {
+        if (publications.isEmpty()) return 0;
+        return (33 * processedPublications + 33 * vectorsComputed)/publications.size() + (33 * termsRead)/termsCount;
+    }
     
     
 }

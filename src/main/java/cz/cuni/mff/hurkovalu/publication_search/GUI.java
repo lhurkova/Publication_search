@@ -31,6 +31,7 @@ import java.awt.Dimension;
 import java.awt.GridBagLayout;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.IOException;
@@ -50,11 +51,14 @@ import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
+import javax.swing.JProgressBar;
 import javax.swing.JRadioButtonMenuItem;
 import javax.swing.JScrollPane;
 import javax.swing.JSlider;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
+import javax.swing.Timer;
 import javax.swing.ToolTipManager;
 import javax.swing.WindowConstants;
 import javax.swing.border.EmptyBorder;
@@ -88,7 +92,9 @@ public class GUI {
     private JRadioButtonMenuItem tfidfItem;
     private JRadioButtonMenuItem lsiItem;
     private JLabel filtersLabel;
-    
+    private JProgressBar bar;
+    private JLabel barLabel;
+    private Timer  progressTimer;    
     private FilterDialog mainFilter;
     private Filters filters;
     private Filters.Filter currFilter;
@@ -135,13 +141,10 @@ public class GUI {
         ToolTipManager.sharedInstance().setInitialDelay(100);
         ToolTipManager.sharedInstance().setDismissDelay(20000);
 
-        loadPublications();
 
         frame = new JFrame(name);
         frame.setLocation(20, 0);
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-//        URL resource = getClass().getResource("icon.png");
-//        frame.setIconImage(Toolkit.getDefaultToolkit().getImage(resource));
         searchButton = new JButton("Search");
         searchButton.setFont(searchButton.getFont().deriveFont(fontSize));
         searchButton.addActionListener(e -> search());
@@ -184,14 +187,47 @@ public class GUI {
         JLabel noResLabel = new JLabel("No results found");
         noResLabel.setFont(noResLabel.getFont().deriveFont(fontSize));
         noResultsPanel.add(noResLabel);
-        
+                
         createMenu();
+        
+        JPanel progressPanel = new JPanel();
+        progressPanel.setLayout(new GridBagLayout());
+        JPanel innerProgressPanel = new JPanel();
+        innerProgressPanel.setLayout(new BoxLayout(innerProgressPanel, BoxLayout.Y_AXIS));
+        bar = new JProgressBar(0, 100);
+        bar.setValue(0);
+        barLabel = new JLabel("Starting...");
+        innerProgressPanel.add(bar);
+        innerProgressPanel.add(barLabel);
+        progressPanel.add(innerProgressPanel);
+        mainPanel.add(progressPanel);
 
         frame.getContentPane().add(topPanel, BorderLayout.NORTH);
         frame.getContentPane().add(scrollFrame, BorderLayout.CENTER);
         frame.pack();
         frame.setVisible(true);
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        
+        BackgroundTask backgroundTask = new BackgroundTask();
+        backgroundTask.execute();
+        progressTimer = new Timer(1000, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                int progress = backgroundTask.getProgressA();
+                if (progress == -1) {
+                    if (!bar.isIndeterminate()) {
+                        bar.setIndeterminate(true);
+                    }    
+                } else {
+                    if (bar.isIndeterminate()) {
+                        bar.setIndeterminate(false);
+                    }    
+                    bar.setValue(progress);
+                }
+            }
+        });
+        progressTimer.setInitialDelay(100);
+        progressTimer.start();
     }
     
     private void createMenu() {
@@ -262,20 +298,6 @@ public class GUI {
         mainPanel.revalidate();
         mainPanel.repaint();
         SwingUtilities.invokeLater(() -> scrollFrame.getVerticalScrollBar().setValue(0));
-    }
-
-    private void loadPublications() {
-        Path directory = Paths.get("..");
-        Preprocessing preprocessing = new Preprocessing();
-        publications = preprocessing.processDirectory(directory);
-        filters = preprocessing.getFilters();
-        currFilter = filters.createEmptyFilter();
-        lsiModel = new LSIModel(publications);
-        lsiModel.processPublications();
-        tfidfModel = new TFIDFModel(publications);
-        tfidfModel.processPublications();
-        currModel = lsiModel;
-        System.out.println("Publications Loaded");
     }
 
     private JComponent createResult(Publication publication) {
@@ -407,4 +429,77 @@ public class GUI {
         filtersLabel.setText(filter.toString());
     }
 
+    
+    private class BackgroundTask extends SwingWorker<Object, Object> {
+
+        
+        enum STATE {
+            INIT(""),
+            XML("Loading Database ..."),
+            LSI("Initializing LSI model ..."),
+            TFIDF("Initializing TF-IDF model ...");
+            
+            private final String text;
+            private STATE(String t) {
+                text = t;
+            }       
+            
+        }
+        Preprocessing preprocessing;
+        STATE st = STATE.INIT;
+        @Override
+        protected Object doInBackground() throws Exception {
+            Path directory = Paths.get("..");
+            preprocessing = new Preprocessing();
+            st = STATE.XML;
+            setNewProgress(st);
+            publications = preprocessing.processDirectory(directory);
+            filters = preprocessing.getFilters();
+            currFilter = filters.createEmptyFilter();
+            
+            lsiModel = new LSIModel(publications);
+            st = STATE.LSI;
+            setNewProgress(st);
+            lsiModel.processPublications();
+            
+            tfidfModel = new TFIDFModel(publications);
+            st = STATE.TFIDF;
+            setNewProgress(st);
+            tfidfModel.processPublications();
+            currModel = lsiModel;
+            
+            System.out.println("Publications Loaded");
+            return null;
+        }
+
+        @Override
+        protected void done() {
+            progressTimer.stop();
+            mainPanel.removeAll();
+            mainPanel.invalidate();
+            mainPanel.revalidate();
+            mainPanel.repaint();            
+        }
+        
+        
+        private void setNewProgress(STATE st) {
+            SwingUtilities.invokeLater(() -> {bar.setValue(0); barLabel.setText(st.text);});
+        }
+                    
+        int getProgressA() {
+            switch (st) {
+                case INIT:
+                    return 0;
+                case XML:
+                    return preprocessing.getProgress();
+                case LSI:
+                    return lsiModel.getProgress();
+                case TFIDF:
+                    return tfidfModel.getProgress();
+            }
+            return 0;
+        }
+        
+        
+    }
 }

@@ -28,6 +28,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 import javax.xml.XMLConstants;
@@ -42,8 +44,11 @@ import org.xml.sax.SAXException;
  */
 public class Preprocessing {
     
+    private static final Logger LOGGER = Logger.getLogger(Preprocessing.class.getName());
     private static final String EXTENSION = ".xml.gz";
     private Filters filters;
+    private int numberOfFiles;
+    private volatile int processedFiles;
     
     /**
      * Reads all XML files in the given directory and returns all valid publications described in the files.
@@ -62,13 +67,23 @@ public class Preprocessing {
             parser.setProperty(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
 
             PubMedHandler handler = new PubMedHandler();
+            
+            try (Stream<Path> files = Files.walk(directory)) {
+                numberOfFiles = (int) files.filter(this::checkExtensions)
+                        .count();
+            } catch (IOException e) {
+                LOGGER.log(Level.SEVERE, "processDirectory", e);
+                System.exit(1);
+            }
+            
             try (Stream<Path> files = Files.walk(directory)) {
                 files.filter(this::checkExtensions)
                     .forEach(p -> {
+                            processedFiles++;
                             try (InputStream in = new GZIPInputStream(Files.newInputStream(p))) {
                                 parser.parse(in, handler);
                             } catch (IOException | SAXException e) {
-                                e.printStackTrace();
+                                LOGGER.log(Level.SEVERE, "processDirectory", e);
                             }
                         });
             }
@@ -117,5 +132,10 @@ public class Preprocessing {
      */
     public Filters getFilters() {
         return filters;
+    }
+    
+    public int getProgress() {
+        if (numberOfFiles == 0) return 0;
+        return (100 * processedFiles)/numberOfFiles;
     }
 }
