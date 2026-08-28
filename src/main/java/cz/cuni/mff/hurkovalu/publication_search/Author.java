@@ -45,4 +45,14 @@ public record Author(String lastName, String[] foreNames) implements Serializabl
         allFields.add(lastName);
         return Arrays.hashCode(allFields.toArray());
     }
+    
+    @Override
+    public String toString() {
+        StringBuilder s = new StringBuilder();
+        for (String name: foreNames) {
+            s.append(name).append(" ");
+        }
+        s.append(lastName);
+        return s.toString();
+    }
 }

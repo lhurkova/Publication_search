@@ -31,7 +31,6 @@ import java.awt.Dimension;
 import java.awt.GridBagLayout;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.IOException;
@@ -42,7 +41,6 @@ import java.util.List;
 import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
-import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JEditorPane;
@@ -60,7 +58,6 @@ import javax.swing.SwingUtilities;
 import javax.swing.ToolTipManager;
 import javax.swing.WindowConstants;
 import javax.swing.border.EmptyBorder;
-import javax.swing.event.ChangeListener;
 import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
 import javax.swing.text.Position;
@@ -90,6 +87,7 @@ public class GUI {
     private JSlider yearsEnd;
     private JRadioButtonMenuItem tfidfItem;
     private JRadioButtonMenuItem lsiItem;
+    private JLabel filtersLabel;
     
     private FilterDialog mainFilter;
     private Filters filters;
@@ -159,6 +157,17 @@ public class GUI {
         searchPanel.setPreferredSize(new Dimension(sizeX, 50));
         searchPanel.add(searchField);
         searchPanel.add(searchButton);
+        
+        JPanel filtersPanel = new JPanel(new BorderLayout());
+        filtersPanel.setPreferredSize(new Dimension(sizeX, 30));
+        filtersPanel.setBorder(new EmptyBorder(0, 50, 0, 50));
+        filtersLabel = new JLabel("");
+        filtersPanel.add(filtersLabel, BorderLayout.CENTER);
+        
+        JPanel topPanel = new JPanel();
+        topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.Y_AXIS));
+        topPanel.add(searchPanel);
+        topPanel.add(filtersPanel);
 
         mainPanel = new JPanel();
         mainPanel.setBackground(Color.WHITE);
@@ -178,7 +187,7 @@ public class GUI {
         
         createMenu();
 
-        frame.getContentPane().add(searchPanel, BorderLayout.NORTH);
+        frame.getContentPane().add(topPanel, BorderLayout.NORTH);
         frame.getContentPane().add(scrollFrame, BorderLayout.CENTER);
         frame.pack();
         frame.setVisible(true);
@@ -395,6 +404,7 @@ public class GUI {
      */
     public void setCurrentFilter(Filters.Filter filter) {
         currFilter = filter;
+        filtersLabel.setText(filter.toString());
     }
 
 }

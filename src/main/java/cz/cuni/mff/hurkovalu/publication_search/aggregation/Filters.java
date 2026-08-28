@@ -103,7 +103,7 @@ public class Filters implements Serializable {
      * @return filter with default options
      */
     public Filter createEmptyFilter() {
-        return new Filter(null, null, null);
+        return new Filter(null, null, null, this);
     }
     
     /**
@@ -136,7 +136,7 @@ public class Filters implements Serializable {
             correctYears = years;
         }
         
-        return new Filter(authors, journal, correctYears);
+        return new Filter(authors, journal, correctYears, this);
     }
     
     /**
@@ -146,11 +146,13 @@ public class Filters implements Serializable {
         Set<Author> authors;
         String journal;
         TimeRange years;
+        Filters filters;
         
-        Filter(Set<Author> authors, String journal, TimeRange years) {
+        Filter(Set<Author> authors, String journal, TimeRange years, Filters filters) {
             this.authors = authors;
             this.journal = journal;
             this.years = years;
+            this.filters = filters;
         }
         
         /**
@@ -187,6 +189,35 @@ public class Filters implements Serializable {
             } else {
                 return (p.getYear() >= years.start()) && (p.getYear() <= years.end());
             }
+        }
+        
+        @Override
+        public String toString() {
+            StringBuilder s = new StringBuilder("");
+            if (authors != null) {
+                s.append("Author: ");
+                if (authors.size() == 1) {
+                    s.append(authors.toArray(new Author[1])[0].toString());
+                } else {
+                    s.append(authors.toArray(new Author[1])[0].lastName());
+                }
+            }
+            if (journal != null) {
+                if (s.length() > 0) {
+                    s.append(", ");
+                }
+                s.append("Journal: ").append(journal);
+            }
+            if (years != null) {
+                if (!years.equals(filters.getTimeRange())) {
+                    if (s.length() > 0) {
+                        s.append(", ");
+                    }
+                    s.append("Time range: ");
+                    s.append("(").append(years.start()).append(", ").append(years.end()).append(")");
+                }
+            }
+            return s.toString();
         }
     }
     
