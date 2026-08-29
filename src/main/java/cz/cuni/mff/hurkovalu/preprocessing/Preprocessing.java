@@ -20,9 +20,11 @@ package cz.cuni.mff.hurkovalu.preprocessing;
 
 import cz.cuni.mff.hurkovalu.publication_search.Publication;
 import cz.cuni.mff.hurkovalu.publication_search.aggregation.Filters;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -47,15 +49,27 @@ public class Preprocessing {
     private static final Logger LOGGER = Logger.getLogger(Preprocessing.class.getName());
     private static final String EXTENSION = ".xml.gz";
     private Filters filters;
+    private List<Publication> publications;
     private int numberOfFiles;
     private volatile int processedFiles;
+    private Path dataDirectory;
+    private Path serializationDirectory;
+    
+    public Preprocessing(Path dataDirectory, Path serializationDirectory) {
+        this.dataDirectory = dataDirectory;
+        this.serializationDirectory = serializationDirectory;
+    }
     
     /**
      * Reads all XML files in the given directory and returns all valid publications described in the files.
-     * @param directory directory containing XML files
      * @return valid publications
      */
-    public List<Publication> processDirectory(Path directory) {
+    public List<Publication> processDirectory() {
+        publications = readPublications();
+        filters = readFilters();
+        if (publications != null && filters != null) {
+            return publications;
+        }
         SAXParserFactory saxParserFactory = SAXParserFactory.newInstance("com.sun.org.apache.xerces.internal.jaxp.SAXParserFactoryImpl", getClass().getClassLoader());
         try {
             saxParserFactory.setFeature("http://xml.org/sax/features/external-general-entities", false);
@@ -68,7 +82,7 @@ public class Preprocessing {
 
             PubMedHandler handler = new PubMedHandler();
             
-            try (Stream<Path> files = Files.walk(directory)) {
+            try (Stream<Path> files = Files.walk(dataDirectory)) {
                 numberOfFiles = (int) files.filter(this::checkExtensions)
                         .count();
             } catch (IOException e) {
@@ -76,7 +90,7 @@ public class Preprocessing {
                 System.exit(1);
             }
             
-            try (Stream<Path> files = Files.walk(directory)) {
+            try (Stream<Path> files = Files.walk(dataDirectory)) {
                 files.filter(this::checkExtensions)
                     .forEach(p -> {
                             processedFiles++;
@@ -89,11 +103,9 @@ public class Preprocessing {
             }
             handler.computeCitations();
             handler.computeStaticFeatures();
-            List<Publication> publications = handler.getPublications();
-            storePublications(publications);
+            publications = handler.getPublications();
             filters = new Filters(handler.getUniqueAuthors(), handler.getUniqueSurnames(),
                     handler.getUniqueJournals(), handler.getValidYears());
-            storeFilters(filters);
             return publications;
         } catch (ParserConfigurationException | SAXException | IOException e) {
             e.printStackTrace();
@@ -106,8 +118,8 @@ public class Preprocessing {
         return name.endsWith(EXTENSION);
     }
     
-    private void storePublications(List<Publication> publications) {
-        try (FileOutputStream file = new FileOutputStream("/tmp/publications.ser");
+    public void storePublications() {
+        try (FileOutputStream file = new FileOutputStream(serializationDirectory.resolve("publications.ser").toFile());
                 ObjectOutputStream out = new ObjectOutputStream(file)) {
             out.writeObject(publications);
             System.out.println("Publications has been serialized");
@@ -116,14 +128,37 @@ public class Preprocessing {
         }
     }
     
-    private void storeFilters(Filters filters) {
-        try (FileOutputStream file = new FileOutputStream("/tmp/filters.ser");
+    private List<Publication> readPublications() {
+        try (FileInputStream file = new FileInputStream(serializationDirectory.resolve("publications.ser").toFile());
+                ObjectInputStream in = new ObjectInputStream(file)) {
+            List<Publication> pubs = (List<Publication>) in.readObject();
+            return pubs;
+        } catch (IOException e) {
+        } catch (ClassNotFoundException e) {
+            LOGGER.log(Level.SEVERE, "readPublications", e);
+        }
+        return null;
+    }
+    
+    public void storeFilters() {
+        try (FileOutputStream file = new FileOutputStream(serializationDirectory.resolve("filters.ser").toFile());
                 ObjectOutputStream out = new ObjectOutputStream(file)) {
             out.writeObject(filters);
             System.out.println("Filters has been serialized");
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+    
+    private Filters readFilters() {
+        try (FileInputStream file = new FileInputStream(serializationDirectory.resolve("filters.ser").toFile());
+                ObjectInputStream in = new ObjectInputStream(file)) {
+            return (Filters) in.readObject();
+        } catch (IOException e) {
+        } catch (ClassNotFoundException e) {
+            LOGGER.log(Level.SEVERE, "readFilters", e);
+        }
+        return null;
     }
     
     /**
@@ -135,7 +170,7 @@ public class Preprocessing {
     }
     
     public int getProgress() {
-        if (numberOfFiles == 0) return 0;
+        if (numberOfFiles == 0) return -1;
         return (100 * processedFiles)/numberOfFiles;
     }
 }

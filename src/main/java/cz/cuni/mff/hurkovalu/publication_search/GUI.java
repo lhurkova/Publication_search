@@ -103,6 +103,9 @@ public class GUI {
     private LSIModel lsiModel;
     private TFIDFModel tfidfModel;
     private List<Publication> publications;
+    
+    private Path dataDirectory;
+    private Path serializationDirectory;
 
     private static String OPEN_LINK = "open";
     private static String HEADER_TEMPLATE = """
@@ -127,10 +130,12 @@ public class GUI {
      * @param sizeY height of the window
      * @param name name of the window
      */
-    public GUI(int sizeX, int sizeY, String name) {
+    public GUI(int sizeX, int sizeY, String name, Path dataDirectory, Path serializationDirectory) {
         this.sizeX = sizeX;
         this.sizeY = sizeY;
         this.name = name;
+        this.dataDirectory = dataDirectory;
+        this.serializationDirectory = serializationDirectory;
     }
     
     /**
@@ -213,7 +218,7 @@ public class GUI {
         progressTimer = new Timer(1000, new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                int progress = backgroundTask.getProgressA();
+                int progress = backgroundTask.getCurrProgress();
                 if (progress == -1) {
                     if (!bar.isIndeterminate()) {
                         bar.setIndeterminate(true);
@@ -449,32 +454,37 @@ public class GUI {
         STATE st = STATE.INIT;
         @Override
         protected Object doInBackground() throws Exception {
-            Path directory = Paths.get("..");
-            preprocessing = new Preprocessing();
+            preprocessing = new Preprocessing(dataDirectory, serializationDirectory);
             st = STATE.XML;
             setNewProgress(st);
-            publications = preprocessing.processDirectory(directory);
+            publications = preprocessing.processDirectory();
             filters = preprocessing.getFilters();
             currFilter = filters.createEmptyFilter();
             
-            lsiModel = new LSIModel(publications);
             st = STATE.LSI;
             setNewProgress(st);
-            lsiModel.processPublications();
+            lsiModel = LSIModel.loadFromFile(serializationDirectory, publications);
+            if (lsiModel == null) {
+                lsiModel = new LSIModel(publications);
+                lsiModel.processPublications();
+            }
             
-            tfidfModel = new TFIDFModel(publications);
             st = STATE.TFIDF;
             setNewProgress(st);
-            tfidfModel.processPublications();
+            tfidfModel = TFIDFModel.loadFromFile(serializationDirectory, publications);
+            if (tfidfModel == null) {
+                tfidfModel = new TFIDFModel(publications);
+                tfidfModel.processPublications();
+            }
             currModel = lsiModel;
-            
             System.out.println("Publications Loaded");
+            progressTimer.stop();
+            serialize(serializationDirectory);
             return null;
         }
 
         @Override
         protected void done() {
-            progressTimer.stop();
             mainPanel.removeAll();
             mainPanel.invalidate();
             mainPanel.revalidate();
@@ -485,19 +495,27 @@ public class GUI {
         private void setNewProgress(STATE st) {
             SwingUtilities.invokeLater(() -> {bar.setValue(0); barLabel.setText(st.text);});
         }
-                    
-        int getProgressA() {
+            
+
+        int getCurrProgress() {
             switch (st) {
                 case INIT:
                     return 0;
                 case XML:
                     return preprocessing.getProgress();
                 case LSI:
-                    return lsiModel.getProgress();
+                    return lsiModel == null ? -1 : lsiModel.getProgress();
                 case TFIDF:
-                    return tfidfModel.getProgress();
+                    return tfidfModel == null ? -1 : tfidfModel.getProgress();
             }
             return 0;
+        }
+        
+        private void serialize(Path directory) {
+            preprocessing.storePublications();
+            preprocessing.storeFilters();
+            lsiModel.saveToFile(directory);
+            tfidfModel.saveToFile(directory);
         }
         
         

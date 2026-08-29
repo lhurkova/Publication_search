@@ -18,10 +18,12 @@
  */
 package cz.cuni.mff.hurkovalu.publication_search.models;
 
+import java.io.Serializable;
+
 /**
  * Class containing an information about a term fro TF-IDF model.
  * @author Lucie Hurkova
  */
-public record WordInfo(String word, int index, double IDF) {
+public record WordInfo(String word, int index, double IDF) implements Serializable {
 
 }

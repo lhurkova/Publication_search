@@ -19,12 +19,18 @@
 package cz.cuni.mff.hurkovalu.publication_search.models;
 
 import cz.cuni.mff.hurkovalu.publication_search.Publication;
+import cz.cuni.mff.hurkovalu.publication_search.aggregation.Filters;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.PrintStream;
+import java.io.Serializable;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -40,16 +46,17 @@ import org.apache.commons.math4.legacy.linear.DiagonalMatrix;
 import org.apache.commons.math4.legacy.linear.OpenMapRealMatrix;
 import org.apache.commons.math4.legacy.linear.RealMatrix;
 import org.apache.commons.math4.legacy.linear.RealVector;
+import java.nio.file.Path;
 
 /**
  * Class computing the Latent Semantic Indexing model.
  * @author Lucie Hurkova
  */
-public class LSIModel implements Model {
+public class LSIModel implements Model, Serializable {
 
     private static final Logger LOGGER = Logger.getLogger(LSIModel.class.getName());
     private static final int K = 50;
-    private List<Publication> publications;
+    private transient List<Publication> publications;
     private Map<String, Integer> wordVector = new HashMap<>();
     private RealMatrix docConceptMatrix; //documents in columns
     private RealMatrix transformMatrix;
@@ -206,6 +213,29 @@ public class LSIModel implements Model {
         if (publicationsProcessed) return -1;
         if (publications.isEmpty()) return 0;
         return (processedPublications * 100)/publications.size();
+    }
+    
+    public void saveToFile(Path directory) {
+        try (FileOutputStream file = new FileOutputStream(directory.resolve("lsi.ser").toFile());
+                ObjectOutputStream out = new ObjectOutputStream(file)) {
+            out.writeObject(this);
+            System.out.println("LSI model has been serialized");
+        } catch (IOException e) {
+            LOGGER.log(Level.SEVERE, "saveToFile", e);
+        }
+    }
+    
+    public static LSIModel loadFromFile(Path directory, List<Publication> publications) {
+        try (FileInputStream file = new FileInputStream(directory.resolve("lsi.ser").toFile());
+                ObjectInputStream in = new ObjectInputStream(file)) {
+            LSIModel model = (LSIModel) in.readObject();
+            model.publications = publications;
+            return model;
+        } catch (IOException e) {
+        } catch (ClassNotFoundException e) {
+            LOGGER.log(Level.SEVERE, "loadFromFile", e);
+        }
+        return null;
     }
 
 }

@@ -19,20 +19,30 @@
 package cz.cuni.mff.hurkovalu.publication_search.models;
 
 import cz.cuni.mff.hurkovalu.publication_search.Publication;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Class computing the TF-IDF model.
  * @author Lucie Hurkova
  */
-public class TFIDFModel implements Model {
+public class TFIDFModel implements Model, Serializable {
     
-    private List<Publication> publications;
+    private static final Logger LOGGER = Logger.getLogger(TFIDFModel.class.getName());
+    private transient List<Publication> publications;
     private Map<String, WordInfo> wordVector;
     private volatile int processedPublications;
     private volatile int termsRead;
@@ -179,5 +189,26 @@ public class TFIDFModel implements Model {
         return (33 * processedPublications + 33 * vectorsComputed)/publications.size() + (33 * termsRead)/termsCount;
     }
     
+    public void saveToFile(Path directory) {
+        try (FileOutputStream file = new FileOutputStream(directory.resolve("tfidf.ser").toFile());
+                ObjectOutputStream out = new ObjectOutputStream(file)) {
+            out.writeObject(this);
+            System.out.println("TF-IDF model has been serialized");
+        } catch (IOException e) {
+            LOGGER.log(Level.SEVERE, "saveToFile", e);
+        }
+    }
     
+    public static TFIDFModel loadFromFile(Path directory, List<Publication> publications) {
+        try (FileInputStream file = new FileInputStream(directory.resolve("tfidf.ser").toFile());
+                ObjectInputStream in = new ObjectInputStream(file)) {
+            TFIDFModel model = (TFIDFModel) in.readObject();
+            model.publications = publications;
+            return model;
+        } catch (IOException e) {
+        } catch (ClassNotFoundException e) {
+            LOGGER.log(Level.SEVERE, "loadFromFile", e);
+        }
+        return null;
+    }  
 }
