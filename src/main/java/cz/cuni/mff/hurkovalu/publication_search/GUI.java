@@ -38,6 +38,8 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
@@ -73,7 +75,9 @@ import javax.swing.text.StyledDocument;
  * @author Lucie Hurkova
  */
 public class GUI {
-
+    
+    private static final Logger LOGGER = Logger.getLogger(GUI.class.getName());
+    
     private JFrame frame;
     private String name;
     private int sizeX;
@@ -131,6 +135,9 @@ public class GUI {
      * @param sizeX width of the window
      * @param sizeY height of the window
      * @param name name of the window
+     * @param dataDirectory directory containing database XML files
+     * @param serializationDirectory directory containing serialized database or directory for future serialization of the database
+     * @param svdsPath name of compiled C program for computation of SVD for LSI model
      */
     public GUI(int sizeX, int sizeY, String name, Path dataDirectory, Path serializationDirectory, Path svdsPath) {
         this.sizeX = sizeX;
@@ -142,7 +149,7 @@ public class GUI {
     }
     
     /**
-     * Initializes all graphical components in the {@GUI} and loads the database.
+     * Initializes all graphical components in the {@link GUI} and loads the database.
      */
     public void createGUI() {
         //System.setProperty("apple.laf.useScreenMenuBar", "true");
@@ -184,7 +191,7 @@ public class GUI {
         mainPanel.setBackground(Color.WHITE);
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.PAGE_AXIS));
         scrollFrame = new JScrollPane(mainPanel);
-        scrollFrame.setPreferredSize(new Dimension(sizeX, sizeY));
+        scrollFrame.setPreferredSize(new Dimension(sizeX+50, sizeY));
         
         noResultsPanel = new JPanel();
         noResultsPanel.setLayout(new GridBagLayout());
@@ -368,8 +375,7 @@ public class GUI {
                         try {
                             Desktop.getDesktop().browse(e.getURL().toURI());
                         } catch (IOException | URISyntaxException e1) {
-                            // TODO Auto-generated catch block
-                            e1.printStackTrace();
+                            LOGGER.log(Level.SEVERE, "createResult", e);
                         }
                     }
                 }
@@ -379,7 +385,8 @@ public class GUI {
 
         JEditorPane articleAbstract = new JEditorPane();
         articleAbstract.setContentType("text/html");
-        articleAbstract.setText(String.format(ABSTRACT_TEMPLATE, publication.getPubAbstract()));
+        String pubAbstract = publication.getPubAbstract();
+        articleAbstract.setText(String.format(ABSTRACT_TEMPLATE, pubAbstract));
         articleAbstract.setEditable(false);
         StyledDocument document2 = (StyledDocument) articleAbstract.getDocument();
         document2.setParagraphAttributes(0, document.getLength(), a, false);
@@ -391,8 +398,8 @@ public class GUI {
 
         if (height > 100) {
             int pos = articleAbstract.getUI().viewToModel2D(articleAbstract, new Point(sizeX, 100), new Position.Bias[1]);
-            String shortAbstract = publication.getPubAbstract().substring(0, pos + 1);
-            if (shortAbstract.length() < publication.getPubAbstract().trim().length()) {
+            String shortAbstract = pubAbstract.substring(0, Math.min(pos + 1, pubAbstract.length()));
+            if (shortAbstract.length() < pubAbstract.trim().length()) {
                 int end = shortAbstract.lastIndexOf(' ');
                 while ((pos - end) < 4) {
                     end = shortAbstract.substring(0, end).lastIndexOf(' ');
@@ -419,15 +426,15 @@ public class GUI {
                             JDialog dialog = new JDialog(frame, title.toString());
                             JEditorPane fullAbstract = new JEditorPane();
                             fullAbstract.setContentType("text/html");
-                            fullAbstract.setText(String.format(ABSTRACT_TEMPLATE, publication.getPubAbstract()));
+                            fullAbstract.setText(String.format(ABSTRACT_TEMPLATE, pubAbstract));
                             fullAbstract.setEditable(false);
                             StyledDocument document3 = (StyledDocument) fullAbstract.getDocument();
                             document3.setParagraphAttributes(0, document.getLength(), a, false);
                             fullAbstract.setBorder(new EmptyBorder(10, 10, 10, 10));
                             fullAbstract.setSize(new Dimension(sizeX/2, 1000));
-                            articleAbstract.setMaximumSize(new Dimension(sizeX/2, articleAbstract.getPreferredSize().height));
+                            fullAbstract.setMaximumSize(new Dimension(sizeX/2, fullAbstract.getPreferredSize().height));
                             dialog.add(fullAbstract);
-                            dialog.setSize(new Dimension(sizeX/2, articleAbstract.getPreferredSize().height));
+                            dialog.setSize(new Dimension(sizeX/2, fullAbstract.getPreferredSize().height+20));
                             dialog.setLocationRelativeTo(frame);
                             dialog.setVisible(true);
                         }
@@ -446,7 +453,7 @@ public class GUI {
     
     /**
      * Sets {@link Filters.Filter} to be used for the next search.
-     * @param filter 
+     * @param filter filter for the next search
      */
     public void setCurrentFilter(Filters.Filter filter) {
         currFilter = filter;
