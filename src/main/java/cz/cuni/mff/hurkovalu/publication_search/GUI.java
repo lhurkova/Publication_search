@@ -508,7 +508,6 @@ public class GUI {
                     tfidfModel.processPublications();
                 }
                 currModel = lsiModel;
-                System.out.println("Publications Loaded");
                 progressTimer.stop();
                 serialize(serializationDirectory);
             } catch (Exception e) {

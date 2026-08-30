@@ -242,7 +242,6 @@ public class LSIModel implements Model, Serializable {
         try (FileOutputStream file = new FileOutputStream(lsiStore.toFile());
                 ObjectOutputStream out = new ObjectOutputStream(file)) {
             out.writeObject(this);
-            System.out.println("LSI model has been serialized");
         } catch (IOException e) {
             LOGGER.log(Level.SEVERE, "saveToFile", e);
         }

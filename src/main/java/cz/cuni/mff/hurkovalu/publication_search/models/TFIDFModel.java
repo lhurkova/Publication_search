@@ -214,7 +214,6 @@ public class TFIDFModel implements Model, Serializable {
         try (FileOutputStream file = new FileOutputStream(tfStore.toFile());
                 ObjectOutputStream out = new ObjectOutputStream(file)) {
             out.writeObject(this);
-            System.out.println("TF-IDF model has been serialized");
         } catch (IOException e) {
             LOGGER.log(Level.SEVERE, "saveToFile", e);
         }
