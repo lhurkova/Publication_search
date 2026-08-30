@@ -9,7 +9,7 @@ The application uses baseline set of PubMed citation records in XML format avail
 To build the application use `mvn compile` in root directory of the project. LSI model initialization uses single value decomposition that is computed using C library [svds-C](https://github.com/THU-numbda/svds-C) available on GitHub for performance reasons. To use LSI model, [./svds_run_AMD.c](./svds_run_AMD.c) file needs to be compiled against [svds-C](https://github.com/THU-numbda/svds-C) before running the PubMed Search.
 
 ### Run
-Project needs to be run on JDK 21 or newer. To run the application use:`mvn exec:java -Dexec.args="arg0 arg1 arg2"` in root directory of the project.
+Project needs to be run on JDK 21 or newer. To run the application use:`mvn exec:exec -Dexec.appArgs="arg0 arg1 arg2"` in root directory of the project.
   - arg0: directory containing compressed XML files (database)
   - arg1: directory containg serialized database and models or directory for future serialization
   - arg2: name of compiled C program ([./svds_run_AMD.c](./svds_run_AMD.c)) for computation of SVD for LSI model (optional)
