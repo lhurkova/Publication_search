@@ -483,33 +483,37 @@ public class GUI {
         Preprocessing preprocessing;
         STATE st = STATE.INIT;
         @Override
-        protected Object doInBackground() throws Exception {
-            preprocessing = new Preprocessing(dataDirectory, serializationDirectory);
-            st = STATE.XML;
-            setNewProgress(st);
-            publications = preprocessing.processDirectory();
-            filters = preprocessing.getFilters();
-            currFilter = filters.createEmptyFilter();
-            
-            st = STATE.LSI;
-            setNewProgress(st);
-            lsiModel = LSIModel.loadFromFile(serializationDirectory, publications);
-            if (lsiModel == null && svdsPath != null) {
-                lsiModel = new LSIModel(publications, svdsPath);
-                lsiModel.processPublications();
+        protected Object doInBackground() {
+            try {
+                preprocessing = new Preprocessing(dataDirectory, serializationDirectory);
+                st = STATE.XML;
+                setNewProgress(st);
+                publications = preprocessing.processDirectory();
+                filters = preprocessing.getFilters();
+                currFilter = filters.createEmptyFilter();
+
+                st = STATE.LSI;
+                setNewProgress(st);
+                lsiModel = LSIModel.loadFromFile(serializationDirectory, publications);
+                if (lsiModel == null && svdsPath != null) {
+                    lsiModel = new LSIModel(publications, svdsPath);
+                    lsiModel.processPublications();
+                }
+
+                st = STATE.TFIDF;
+                setNewProgress(st);
+                tfidfModel = TFIDFModel.loadFromFile(serializationDirectory, publications);
+                if (tfidfModel == null) {
+                    tfidfModel = new TFIDFModel(publications);
+                    tfidfModel.processPublications();
+                }
+                currModel = lsiModel;
+                System.out.println("Publications Loaded");
+                progressTimer.stop();
+                serialize(serializationDirectory);
+            } catch (Exception e) {
+                LOGGER.log(Level.SEVERE, "doInBackground", e);
             }
-            
-            st = STATE.TFIDF;
-            setNewProgress(st);
-            tfidfModel = TFIDFModel.loadFromFile(serializationDirectory, publications);
-            if (tfidfModel == null) {
-                tfidfModel = new TFIDFModel(publications);
-                tfidfModel.processPublications();
-            }
-            currModel = lsiModel;
-            System.out.println("Publications Loaded");
-            progressTimer.stop();
-            serialize(serializationDirectory);
             return null;
         }
 
@@ -544,7 +548,7 @@ public class GUI {
         
         private void serialize(Path directory) {
             preprocessing.storePublications();
-            lsiModel.saveToFile(directory);
+            if (lsiModel != null) lsiModel.saveToFile(directory);
             tfidfModel.saveToFile(directory);
         }
         
