@@ -78,6 +78,7 @@ public class PubMedHandler  extends DefaultHandler {
     private Map<Integer, Integer> citations = new HashMap<>();
     
     private StringBuilder data;
+    private StringBuilder htmlText;
     
     private List<Publication> publications = new ArrayList<>();
     private Map<String, String> uniqueJournals = new HashMap<>();
@@ -164,6 +165,10 @@ public class PubMedHandler  extends DefaultHandler {
                 if (REFERENCE_LIST.equals(hierarchy.getLast())) {
                     hierarchy.add(REFERENCE);
                 }
+                break;
+            case ABSTRACT:
+            case ARTICLE_TITLE:
+                htmlText = new StringBuilder();
                 break;
         }
         
@@ -261,7 +266,8 @@ public class PubMedHandler  extends DefaultHandler {
                 break;
             case ARTICLE_TITLE:
                 if (ARTICLE.equals(last_element)) {
-                    currPub.setTitle(data.toString());
+                    currPub.setTitle(htmlText.toString());
+                    htmlText = null;
                 }
                 break;
             case AUTHOR_LIST:
@@ -291,7 +297,8 @@ public class PubMedHandler  extends DefaultHandler {
                 break;
             case ABSTRACT:
                 if (ARTICLE.equals(last_element)) {
-                    currPub.setPubAbstract(data.toString());
+                    currPub.setPubAbstract(htmlText.toString());
+                    htmlText = null;
                 }
                 break;
             case PUBMED_DATA:
@@ -360,6 +367,7 @@ public class PubMedHandler  extends DefaultHandler {
 
     @Override
     public void characters(char[] ch, int start, int length) throws SAXException {
+        if (htmlText != null) htmlText.append(ch, start, length);
         data.append(ch, start, length);
     }
     
