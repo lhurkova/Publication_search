@@ -47,6 +47,10 @@ import org.apache.commons.math4.legacy.linear.RealMatrix;
 import org.apache.commons.math4.legacy.linear.RealVector;
 import java.nio.file.Path;
 import java.util.Scanner;
+import java.util.stream.IntStream;
+import org.apache.commons.math4.legacy.exception.DimensionMismatchException;
+import org.apache.commons.math4.legacy.exception.MathArithmeticException;
+import org.apache.commons.math4.legacy.exception.OutOfRangeException;
 
 /**
  * Class computing the Latent Semantic Indexing model.
@@ -159,25 +163,27 @@ public class LSIModel implements Model, Serializable {
      */
     @Override
     public void matchQuery(String query) {
-        RealVector queryVector = new ArrayRealVector(wordVector.size());
+        RealVector wordQueryVector = new ArrayRealVector(wordVector.size());
         for (String token : WordUtils.getTokens(query)) {
             if (wordVector.containsKey(token)) {
-                queryVector.setEntry(wordVector.get(token), 1);
+                wordQueryVector.setEntry(wordVector.get(token), 1);
             }
         }
-        queryVector = transformMatrix.operate(queryVector);
-        for (int i = 0; i < publications.size(); i++) {
-            double absSim = 0;
-            if (docConceptMatrix.getColumnVector(2 * i).getNorm() != 0) {
-                absSim = Math.abs(queryVector.cosine(docConceptMatrix.getColumnVector(2 * i)));
-            }
-            publications.get(i).setFeture(absSim, 0);
-            double titleSim = 0;
-            if (docConceptMatrix.getColumnVector(2 * i + 1).getNorm() != 0) {
-                titleSim = Math.abs(queryVector.cosine(docConceptMatrix.getColumnVector(2 * i + 1)));
-            } 
-            publications.get(i).setFeture(titleSim, 1);
+        RealVector queryVector = transformMatrix.operate(wordQueryVector);
+        IntStream.range(0, publications.size()).parallel().forEach(i -> computeQueryDis(i, queryVector));
+    }
+
+    private void computeQueryDis(int i, RealVector queryVector) throws MathArithmeticException, DimensionMismatchException, OutOfRangeException {
+        double absSim = 0;
+        if (docConceptMatrix.getColumnVector(2 * i).getNorm() != 0) {
+            absSim = Math.abs(queryVector.cosine(docConceptMatrix.getColumnVector(2 * i)));
         }
+        publications.get(i).setFeture(absSim, 0);
+        double titleSim = 0;
+        if (docConceptMatrix.getColumnVector(2 * i + 1).getNorm() != 0) {
+            titleSim = Math.abs(queryVector.cosine(docConceptMatrix.getColumnVector(2 * i + 1)));
+        }
+        publications.get(i).setFeture(titleSim, 1);
     }
 
     private RealMatrix readMatrix(File file) throws FileNotFoundException, IOException {

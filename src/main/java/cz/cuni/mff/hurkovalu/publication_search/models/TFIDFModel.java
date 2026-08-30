@@ -165,11 +165,10 @@ public class TFIDFModel implements Model, Serializable {
     public void matchQuery(String query) {
         Map<String, Integer> filteredQuery = processText(query);
         Map<Integer, Double> queryVector = computeTFIDF(filteredQuery);
-        for (Publication publication: publications) {
-            double sim = computeCosSimilarity(queryVector, publication.getAbstractVector());
+        publications.parallelStream().forEach(publication -> {
             publication.setFeture(computeCosSimilarity(queryVector, publication.getAbstractVector()), 0);
             publication.setFeture(computeCosSimilarity(queryVector, publication.getTitleVector()), 1);
-        }
+        });
     }
     
     /**
