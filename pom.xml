@@ -41,4 +41,32 @@
         <maven.compiler.target>21</maven.compiler.target>
         <exec.mainClass>cz.cuni.mff.hurkovalu.publication_search.Main</exec.mainClass>
     </properties>
+    <reporting>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>3.6.3</version>
+        <configuration>
+          <overview>${basedir}/src/main/javadoc/overview.html</overview>
+        </configuration>
+        <reportSets>
+          <reportSet>
+            <id>default</id>
+            <configuration>
+              <!-- Specific configuration for the given reports -->
+            </configuration>
+            <reports>
+              <report>javadoc</report>
+            </reports>
+          </reportSet>
+        </reportSets>
+      </plugin>
+      <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-project-info-reports-plugin</artifactId>
+            <version>3.5.0</version>
+        </plugin>
+    </plugins>
+  </reporting>
 </project>

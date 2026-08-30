@@ -66,7 +66,12 @@ public class LSIModel implements Model, Serializable {
     
     private volatile int processedPublications;
     private volatile boolean publicationsProcessed = false;
-
+    
+    /**
+     * Creates a new instance of {@link LSIModel} with given publications and path to SVD script
+     * @param publications database
+     * @param svdScript path to SVD script
+     */
     public LSIModel(List<Publication> publications, Path svdScript) {
         this.publications = publications;
         this.svdScript = svdScript;
@@ -211,12 +216,20 @@ public class LSIModel implements Model, Serializable {
 
     }
     
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public int getProgress() {
         if (publicationsProcessed) return -1;
         if (publications.isEmpty()) return 0;
         return (processedPublications * 100)/publications.size();
     }
     
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void saveToFile(Path directory) {
         Path lsiStore = directory.resolve("lsi.ser");
         if (Files.isReadable(lsiStore)) return;
@@ -229,6 +242,12 @@ public class LSIModel implements Model, Serializable {
         }
     }
     
+    /**
+     * Factory method to load serialized {@link LSIModel} from file.
+     * @param directory directory containing serialized model
+     * @param publications database used for the model
+     * @return loaded model
+     */
     public static LSIModel loadFromFile(Path directory, List<Publication> publications) {
         Path serFile = directory.resolve("lsi.ser");
         try (FileInputStream file = new FileInputStream(serFile.toFile());

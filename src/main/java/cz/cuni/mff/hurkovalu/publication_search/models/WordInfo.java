@@ -22,6 +22,9 @@ import java.io.Serializable;
 
 /**
  * Class containing an information about a term fro TF-IDF model.
+ * @param word term used for TF-IDF model
+ * @param index index of the term
+ * @param IDF IDF value for the term
  * @author Lucie Hurkova
  */
 public record WordInfo(String word, int index, double IDF) implements Serializable {

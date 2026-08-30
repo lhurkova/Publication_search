@@ -9,7 +9,7 @@ import java.nio.file.Path;
 import javax.swing.SwingUtilities;
 
 /**
- *
+ * Main class of the PubMed Search application.
  * @author Lucie Hurkova
  */
 public class Main {

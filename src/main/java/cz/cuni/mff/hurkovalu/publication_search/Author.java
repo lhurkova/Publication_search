@@ -25,6 +25,8 @@ import java.util.List;
 
 /**
  * Class representing an author of a publication with given last name and forenames (initials).
+ * @param lastName last name of the author
+ * @param foreNames all other names except for last name as initials
  * @author Lucie Hurkova
  */
 public record Author(String lastName, String[] foreNames) implements Serializable {

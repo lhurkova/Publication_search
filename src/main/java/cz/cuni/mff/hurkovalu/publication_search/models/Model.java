@@ -18,6 +18,8 @@
  */
 package cz.cuni.mff.hurkovalu.publication_search.models;
 
+import java.nio.file.Path;
+
 /**
  * Interface representing a vector search model.
  * @author Lucie Hurkova
@@ -34,5 +36,17 @@ public interface Model {
      * @param query query to be searched in the database
      */
     void matchQuery(String query);
+    
+    /**
+     * Serializes the instance of the model to a given directory.
+     * @param directory directory for serialization of the model
+     */
+    public void saveToFile(Path directory);
+    
+    /**
+     * Gets the progress of computation of the model in percent.
+     * @return progress of reading the database XML files in percent
+     */
+    public int getProgress();
     
 }

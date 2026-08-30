@@ -53,7 +53,10 @@ public class TFIDFModel implements Model, Serializable {
     private volatile int termsCount = -1;
     private boolean sorted = false;
     
-
+    /**
+     * Creates a new instance of {@link TFIDFModel} with given publications and path to SVD script
+     * @param publications database
+     */
     public TFIDFModel(List<Publication> publications) {
         this.publications = publications;
     }
@@ -192,12 +195,20 @@ public class TFIDFModel implements Model, Serializable {
         }
         return Math.sqrt(size);
     }
-        
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public int getProgress() {
         if (publications.isEmpty()) return 0;
         return (80 * processedPublications)/publications.size() + (10 * vectorsComputed)/publications.size() + (10 * termsRead)/termsCount;
     }
     
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void saveToFile(Path directory) {
         Path tfStore = directory.resolve("tfidf.ser");
         if (Files.isReadable(tfStore)) return;
@@ -210,6 +221,12 @@ public class TFIDFModel implements Model, Serializable {
         }
     }
     
+    /**
+     * Factory method to load serialized {@link TFIDFModel} from file.
+     * @param directory directory containing serialized model
+     * @param publications database used for the model
+     * @return loaded model
+     */
     public static TFIDFModel loadFromFile(Path directory, List<Publication> publications) {
         Path serFile = directory.resolve("tfidf.ser");
         try (FileInputStream file = new FileInputStream(serFile.toFile());
@@ -219,7 +236,6 @@ public class TFIDFModel implements Model, Serializable {
             return model;
         } catch (FileNotFoundException e) {    
         } catch (IOException | ClassNotFoundException e) {
-            
             LOGGER.log(Level.SEVERE, "loadFromFile", e);
         }
         try {
@@ -227,7 +243,6 @@ public class TFIDFModel implements Model, Serializable {
         } catch (IOException e) {
             LOGGER.log(Level.SEVERE, "loadFromFile", e);
         }
-        
         return null;
     }  
 }

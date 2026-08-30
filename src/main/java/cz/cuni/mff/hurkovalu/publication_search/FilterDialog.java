@@ -322,6 +322,4 @@ public class FilterDialog {
     private void changeButtonState() {
         applyButton.setEnabled(authorCorrect && journalCorrect && startCorrect && endCorrect);
     }
-        
-
 }

@@ -58,6 +58,11 @@ public class Preprocessing {
     private Path dataDirectory;
     private Path serializationDirectory;
     
+    /**
+     * Creates a new {@link Preprocessing} instance with given data and serialization directories.
+     * @param dataDirectory directory containing database XML files
+     * @param serializationDirectory directory containing serialized database or directory for future serialization of the database
+     */
     public Preprocessing(Path dataDirectory, Path serializationDirectory) {
         this.dataDirectory = dataDirectory;
         this.serializationDirectory = serializationDirectory;
@@ -114,7 +119,7 @@ public class Preprocessing {
                     handler.getUniqueJournals(), handler.getValidYears());
             return publications;
         } catch (ParserConfigurationException | SAXException | IOException e) {
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "processDirectory", e);
         }
         return new LinkedList<>();
     }
@@ -124,15 +129,17 @@ public class Preprocessing {
         return name.endsWith(EXTENSION);
     }
     
+    /**
+     * Serialize the read publications and filters.
+     */
     public void storePublications() {
         Path pubStore = serializationDirectory.resolve("publications.ser");
         if (Files.isReadable(pubStore)) return;
         try (FileOutputStream file = new FileOutputStream(pubStore.toFile());
                 ObjectOutputStream out = new ObjectOutputStream(new BufferedOutputStream(file, 1024*1024))) {
             out.writeObject(new Database(filters, publications));
-            System.out.println("Publications has been serialized");
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "storePublications", e);
         }
     }
     
@@ -157,6 +164,10 @@ public class Preprocessing {
         return filters;
     }
     
+    /**
+     * Gets the progress of reading the database XML files in percent.
+     * @return progress of reading the database XML files in percent
+     */
     public int getProgress() {
         if (numberOfFiles == 0) return -1;
         return (100 * processedFiles)/numberOfFiles;

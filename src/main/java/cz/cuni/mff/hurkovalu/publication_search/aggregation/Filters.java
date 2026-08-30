@@ -221,6 +221,11 @@ public class Filters implements Serializable {
         }
     }
     
+    /**
+     * Class representing a time range in years.
+     * @param start start of the time range in years
+     * @param end end of the time range in years
+     */
     public static record TimeRange(int start, int end) implements Serializable {
         
     }

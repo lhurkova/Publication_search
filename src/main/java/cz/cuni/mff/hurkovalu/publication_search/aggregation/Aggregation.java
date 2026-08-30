@@ -33,7 +33,7 @@ public class Aggregation {
     
     /**
      * Creates a new instance of {@link Aggregation} with given publications.
-     * @param publications 
+     * @param publications list of publications
      */
     public Aggregation(List<Publication> publications) {
         this.publications = publications;
