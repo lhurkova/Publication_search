@@ -163,11 +163,13 @@ public class GUI {
         searchButton = new JButton("Search");
         searchButton.setFont(searchButton.getFont().deriveFont(fontSize));
         searchButton.addActionListener(e -> search());
+        searchButton.setEnabled(false);
 
         searchField = new JTextField();
         searchField.setFont(searchField.getFont().deriveFont(fontSize));
         searchField.setMaximumSize(new Dimension(sizeX, searchField.getPreferredSize().height));
         searchField.addActionListener(e -> search());
+        searchField.setEnabled(false);
 
         JPanel searchPanel = new JPanel();
         searchPanel.setLayout(new BoxLayout(searchPanel, BoxLayout.LINE_AXIS));
@@ -255,6 +257,8 @@ public class GUI {
         }
         filterItem.setEnabled(true);
         modelIntem.setEnabled(true);
+        searchField.setEnabled(true);
+        searchButton.setEnabled(true);
     }
     
     private void createMenu() {
