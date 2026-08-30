@@ -39,7 +39,7 @@ Filters dialog can be dislayed by selecting "*Filter*" > "*Add filter...*" in th
 If the filters input is incorrect, the text color turns red and the "*Apply*" button is disabled. Correct format of the filters:
 - "*Author*": initials of all forenames followed by full last name or only last name
 - "*Journal*": full name of the journal
-- "*From*": year, must lower or equal to value of "*To*"
-- "*To*": year, must greater or equal to value of "*From*"
+- "*From*": year, must be lower or equal to value of "*To*"
+- "*To*": year, must be greater or equal to value of "*From*"
 
 
