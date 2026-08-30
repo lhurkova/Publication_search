@@ -10,7 +10,7 @@ To build the application use `mvn compile` in root directory of the project. LSI
 
 ### Run
 Project needs to be run on JDK 21 or newer. To run the application use:`mvn exec:exec -Dexec.appArgs="arg0 arg1 arg2"` in root directory of the project.
-  - arg0: directory containing compressed XML files (database)
+  - arg0: directory containing compressed XML files (.xml.gz) from PubMed database (pubmed26n*.xml.gz)
   - arg1: directory containg serialized database and models or directory for future serialization
   - arg2: name of compiled C program ([./svds_run_AMD.c](./svds_run_AMD.c)) for computation of SVD for LSI model (optional)
 
