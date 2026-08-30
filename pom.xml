@@ -40,7 +40,19 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <exec.mainClass>cz.cuni.mff.hurkovalu.publication_search.Main</exec.mainClass>
+        <exec.vmArgs>-XX:+UseStringDeduplication</exec.vmArgs>
+        <exec.args>${exec.vmArgs} -classpath %classpath ${exec.mainClass} ${exec.appArgs}</exec.args>
+        <exec.executable>java</exec.executable>
     </properties>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>1.4.0</version>
+            </plugin>
+        </plugins>
+    </build>
     <reporting>
     <plugins>
       <plugin>

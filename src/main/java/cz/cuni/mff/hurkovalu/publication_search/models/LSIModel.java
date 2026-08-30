@@ -111,7 +111,7 @@ public class LSIModel implements Model, Serializable {
                     currWords.add(token);
                 }
             }
-            System.out.println("Done: " + docIndex + " words " + (wordVector.size() - lastWords));
+            LOGGER.log(Level.FINE, "Done: {0} words {1}", new Object[]{docIndex, wordVector.size() - lastWords});
             lastWords = wordVector.size();
             processedPublications++;
         }
