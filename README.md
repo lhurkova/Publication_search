@@ -3,19 +3,25 @@
 ### Introduction
 PubMed search is a desktop application with graphical user interface for searching scientific articles from PubMed database. The application implements TF-IDF and LSI vector models for full text searching of the abstracts and titles of the articles and further ranks the results based on other criteria such as age or number of citations of the publication.
 
+The application uses baseline set of PubMed citation records in XML format available at [PubMed website](https://pubmed.ncbi.nlm.nih.gov/download/). To improve initial startup time, the parsed XML data together with models are serialized to disk and these serialized data are used in subsequent runs of the application.
+
 ### Build
+To build the application use `mvn compile` in root directory of the project. LSI model initialization uses single value decomposition that is  reasons computed using C library [svds-C](https://github.com/THU-numbda/svds-C) available on GitHub for performance. To use LSI model, [./svds_run_AMD.c](./svds_run_AMD.c) file needs to be compiled against [svds-C](https://github.com/THU-numbda/svds-C) before running the PubMed Search.
 
 ### Run
-Project needs to run on JDK 21 or newer.
+Project needs to be run on JDK 21 or newer. To run the application use:`mvn exec:java -Dexec.args="arg0 arg1 arg2"` in root directory of the project.
+  - arg0: directory containing compressed XML files (database)
+  - arg1: directory containg serialized database and models or directory for future serialization
+  - arg2: name of compiled C program ([./svds_run_AMD.c](./svds_run_AMD.c)) for computation of SVD for LSI model (optional)
 
 ### Graphical user interface
-The PubMed Search is a program with graphical user interface. After the program starts the main window with search text field and menu is displayed. First the application loads the database and initialize models, during this process the search text field and menu are disabled. The progress is displayed by a progress bar on the main window.
+The PubMed Search is a program with graphical user interface. After the application starts the main window with search text field and menu is displayed. First, the application loads the database and initialize models, during this process the search text field and menu are disabled. The progress is displayed by a progress bar on the main window.
 
-#### The search text field
+#### Searching
 Write the query in the search text field located on the top of the main window and hit the "*Search*" button. The results of the query will be diplayed beneath the search text field in the main window.
 
 #### The results
-Each record in the results contains basic information about the found article such as the title, authors, journal, publication date and preview of the abstract. To view the whole abstact double-click it.
+After searching, the ordered list of results is displayed. Each result record contains basic information about the found article such as the title, authors, journal, publication date and preview of the abstract. To view the whole abstact, double-click the abstract text.
 
 #### Menu
 The option "*PubMed Search*" contains basic program actions.
