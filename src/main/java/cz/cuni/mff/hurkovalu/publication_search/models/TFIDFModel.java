@@ -20,6 +20,7 @@ package cz.cuni.mff.hurkovalu.publication_search.models;
 
 import cz.cuni.mff.hurkovalu.publication_search.Publication;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -194,7 +195,7 @@ public class TFIDFModel implements Model, Serializable {
         
     public int getProgress() {
         if (publications.isEmpty()) return 0;
-        return (33 * processedPublications + 33 * vectorsComputed)/publications.size() + (33 * termsRead)/termsCount;
+        return (80 * processedPublications)/publications.size() + (10 * vectorsComputed)/publications.size() + (10 * termsRead)/termsCount;
     }
     
     public void saveToFile(Path directory) {
@@ -210,15 +211,23 @@ public class TFIDFModel implements Model, Serializable {
     }
     
     public static TFIDFModel loadFromFile(Path directory, List<Publication> publications) {
-        try (FileInputStream file = new FileInputStream(directory.resolve("tfidf.ser").toFile());
+        Path serFile = directory.resolve("tfidf.ser");
+        try (FileInputStream file = new FileInputStream(serFile.toFile());
                 ObjectInputStream in = new ObjectInputStream(file)) {
             TFIDFModel model = (TFIDFModel) in.readObject();
             model.publications = publications;
             return model;
-        } catch (IOException e) {
-        } catch (ClassNotFoundException e) {
+        } catch (FileNotFoundException e) {    
+        } catch (IOException | ClassNotFoundException e) {
+            
             LOGGER.log(Level.SEVERE, "loadFromFile", e);
         }
+        try {
+            Files.deleteIfExists(serFile);
+        } catch (IOException e) {
+            LOGGER.log(Level.SEVERE, "loadFromFile", e);
+        }
+        
         return null;
     }  
 }

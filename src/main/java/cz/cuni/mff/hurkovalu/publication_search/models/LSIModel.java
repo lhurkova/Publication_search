@@ -32,7 +32,6 @@ import java.io.ObjectOutputStream;
 import java.io.PrintStream;
 import java.io.Serializable;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -61,15 +60,17 @@ public class LSIModel implements Model, Serializable {
     private Map<String, Integer> wordVector = new HashMap<>();
     private RealMatrix docConceptMatrix; //documents in columns
     private RealMatrix transformMatrix;
-    private static final String SVD_LIB_PATH = "../svds-C/Tests";
-    private static final String SVD_SCRIPT = "svdstest";
     private static final String MATRIX_FILE_NAME = "SNAP.dat";
+    private transient Path svdScript;
+    private transient Path svdLibPath;
     
     private volatile int processedPublications;
     private volatile boolean publicationsProcessed = false;
 
-    public LSIModel(List<Publication> publications) {
+    public LSIModel(List<Publication> publications, Path svdScript) {
         this.publications = publications;
+        this.svdScript = svdScript;
+        this.svdLibPath = svdScript.getParent();
     }
 
     /**
@@ -110,14 +111,14 @@ public class LSIModel implements Model, Serializable {
             processedPublications++;
         }
         publicationsProcessed = true;
-        try (PrintStream output = new PrintStream(new BufferedOutputStream(new FileOutputStream(new File(SVD_LIB_PATH, MATRIX_FILE_NAME)), 1024*1024))) {
+        try (PrintStream output = new PrintStream(new BufferedOutputStream(new FileOutputStream(svdLibPath.resolve(MATRIX_FILE_NAME).toFile()), 1024*1024))) {
             for (Map.Entry<Integer, Map<Integer, Integer>> entry: docTermMatrix.entrySet()) {
                 for(Map.Entry<Integer, Integer> jVal: entry.getValue().entrySet()) {
                     output.println((entry.getKey()+1)+" "+(jVal.getKey()+1)+" "+jVal.getValue());
                 }
             }
             output.flush();
-            String scriptPath = Paths.get(SVD_LIB_PATH, SVD_SCRIPT).toAbsolutePath().toString();
+            String scriptPath = svdScript.toAbsolutePath().toString();
             ProcessBuilder pb = new ProcessBuilder(scriptPath, Integer.toString(termIndex),
                     Integer.toString(2 * publications.size()), Integer.toString(recordsCount));
             pb.inheritIO();
@@ -126,7 +127,7 @@ public class LSIModel implements Model, Serializable {
             try {
                 int exitCode = process.waitFor();
                 System.out.println(termIndex + " x " + 2 * publications.size());
-                File matrixDir = new File(SVD_LIB_PATH);
+                File matrixDir = svdLibPath.toFile();
                 RealMatrix U = readMatrix(new File(matrixDir, "U"));
                 RealMatrix V = readMatrix(new File(matrixDir, "V"));
                 RealMatrix S = readDiagonalMatrix(new File(matrixDir, "S"));
@@ -229,13 +230,20 @@ public class LSIModel implements Model, Serializable {
     }
     
     public static LSIModel loadFromFile(Path directory, List<Publication> publications) {
-        try (FileInputStream file = new FileInputStream(directory.resolve("lsi.ser").toFile());
+        Path serFile = directory.resolve("lsi.ser");
+        try (FileInputStream file = new FileInputStream(serFile.toFile());
                 ObjectInputStream in = new ObjectInputStream(file)) {
             LSIModel model = (LSIModel) in.readObject();
             model.publications = publications;
             return model;
+        } catch (FileNotFoundException e) {    
+        } catch (IOException | ClassNotFoundException e) {
+            
+            LOGGER.log(Level.SEVERE, "loadFromFile", e);
+        }
+        try {
+            Files.deleteIfExists(serFile);
         } catch (IOException e) {
-        } catch (ClassNotFoundException e) {
             LOGGER.log(Level.SEVERE, "loadFromFile", e);
         }
         return null;

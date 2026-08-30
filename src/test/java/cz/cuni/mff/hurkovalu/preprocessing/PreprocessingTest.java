@@ -31,6 +31,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.zip.GZIPOutputStream;
+import org.junit.AfterClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import org.junit.BeforeClass;
@@ -42,6 +43,7 @@ import org.junit.BeforeClass;
 public class PreprocessingTest {
     
     private static Path xmlDir;
+    private static final String XML_FILE = "example.xml.gz";
     private static int year = 1977;
     private static int references = 3;
     private static Author author = new Author("Singla", new String[] {"C", "L"});
@@ -190,10 +192,15 @@ public class PreprocessingTest {
     @BeforeClass
     public static void createXML() throws IOException {
         xmlDir = Files.createTempDirectory("preprocessiing");
-        try (Writer out = new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(xmlDir.resolve("example.xml.gz").toFile())))) {
+        try (Writer out = new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(xmlDir.resolve(XML_FILE).toFile())))) {
             out.write(xmlContent);
         }
-        
+    }
+    
+    @AfterClass
+    public static void removeDir() throws IOException {
+        Files.delete(xmlDir.resolve(XML_FILE));
+        Files.delete(xmlDir);
     }
     
     public PreprocessingTest() {

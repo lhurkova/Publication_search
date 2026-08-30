@@ -315,6 +315,7 @@ public class FilterDialog {
      * @param b visibility
      */
     public void setVisible(boolean b) {
+        dialog.setLocationRelativeTo(dialog.getParent());
         dialog.setVisible(b);
     }
     

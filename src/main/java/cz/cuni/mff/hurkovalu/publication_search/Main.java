@@ -4,17 +4,9 @@
 
 package cz.cuni.mff.hurkovalu.publication_search;
 
-import cz.cuni.mff.hurkovalu.preprocessing.Preprocessing;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import javax.swing.SwingUtilities;
 
 /**
  *
@@ -22,23 +14,43 @@ import java.util.logging.Logger;
  */
 public class Main {
     
-    private static List<Publication> readPublications() {
-        try (FileInputStream file = new FileInputStream("/tmp/publications.ser");
-                ObjectInputStream in = new ObjectInputStream(file)) {
-            return (List<Publication>) in.readObject();
-        } catch (ClassNotFoundException | IOException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
+    private static String argumentsInfo
+            = """
+            Incorrect arguments. Correct arguments:
+            1. argument: directory containing XML files (database)
+            2. argument: directory containg serialized database and models or directory for future serialization
+            3. argument: name of compiled C program for computation of SVD for LSI model (optional)
+            """;
     
     public static void main(String[] args) {
-        Path directory = Paths.get("..");
-        Preprocessing preprocessing = new Preprocessing();
-        List<Publication> publications = preprocessing.processDirectory(directory);
-        List<Publication> readPublications = readPublications();
-        System.out.println(publications.size());
-        System.out.println(readPublications.size());
-        
+            
+            if (args.length < 2) {
+                System.err.println(argumentsInfo);
+                System.exit(1);
+            }
+            Path dataDir = Path.of(args[0]);
+            Path serDir = Path.of(args[1]);
+            
+            if (!Files.isDirectory(dataDir) && !Files.isReadable(dataDir)) {
+                System.err.println(argumentsInfo);
+                System.exit(1);
+            }
+            
+            if (!Files.isDirectory(dataDir) && !Files.isWritable(dataDir) && !Files.isReadable(dataDir)) {
+                System.err.println(argumentsInfo);
+                System.exit(1);
+            }
+            
+            Path svdsPath = null;
+            if (args.length > 2) {
+                svdsPath = Path.of(args[2]);
+                if (!Files.isRegularFile(svdsPath) && !Files.isExecutable(svdsPath)) {
+                    System.err.println(argumentsInfo);
+                    System.exit(1);
+                }
+            }
+
+            GUI gui = new GUI(1000, 700, "PubMed Search", dataDir, serDir, svdsPath);
+            SwingUtilities.invokeLater(() -> gui.createGUI());
     }
 }

@@ -90,6 +90,8 @@ public class GUI {
     private JSlider yearsEnd;
     private JRadioButtonMenuItem tfidfItem;
     private JRadioButtonMenuItem lsiItem;
+    private JMenuItem filterItem;
+    private JMenu modelIntem;
     private JLabel filtersLabel;
     private JProgressBar bar;
     private JLabel barLabel;
@@ -105,6 +107,7 @@ public class GUI {
     
     private Path dataDirectory;
     private Path serializationDirectory;
+    private Path svdsPath;
 
     private static String OPEN_LINK = "open";
     private static String HEADER_TEMPLATE = """
@@ -129,12 +132,13 @@ public class GUI {
      * @param sizeY height of the window
      * @param name name of the window
      */
-    public GUI(int sizeX, int sizeY, String name, Path dataDirectory, Path serializationDirectory) {
+    public GUI(int sizeX, int sizeY, String name, Path dataDirectory, Path serializationDirectory, Path svdsPath) {
         this.sizeX = sizeX;
         this.sizeY = sizeY;
         this.name = name;
         this.dataDirectory = dataDirectory;
         this.serializationDirectory = serializationDirectory;
+        this.svdsPath = svdsPath;
     }
     
     /**
@@ -232,6 +236,18 @@ public class GUI {
         });
         progressTimer.setInitialDelay(100);
         progressTimer.start();
+        
+        
+    }
+    
+    private void enableMenu() {
+        if (lsiModel == null) {
+            currModel = tfidfModel;
+            tfidfItem.setSelected(true);
+            lsiItem.setEnabled(false);
+        }
+        filterItem.setEnabled(true);
+        modelIntem.setEnabled(true);
     }
     
     private void createMenu() {
@@ -247,11 +263,11 @@ public class GUI {
         applicationMenu.add(quitItem);
         quitItem.addActionListener(e -> System.exit(0));
         
-        JMenuItem filterItem = new JMenuItem("Add filter...");
+        filterItem = new JMenuItem("Add filter...");
         filterMenu.add(filterItem);
         filterItem.addActionListener(e -> openFilterDialog());
         
-        JMenu modelIntem = new JMenu("Select model");
+        modelIntem = new JMenu("Select model");
         tfidfItem = new JRadioButtonMenuItem("TF-IDF");
         lsiItem = new JRadioButtonMenuItem("LSI", true);
         ButtonGroup group = new ButtonGroup();
@@ -273,6 +289,9 @@ public class GUI {
         modelMenu.add(modelIntem);
         modelIntem.add(tfidfItem);
         modelIntem.add(lsiItem);
+        
+        filterItem.setEnabled(false);
+        modelIntem.setEnabled(false);
         
         frame.setJMenuBar(menuBar);
     }
@@ -409,6 +428,7 @@ public class GUI {
                             articleAbstract.setMaximumSize(new Dimension(sizeX/2, articleAbstract.getPreferredSize().height));
                             dialog.add(fullAbstract);
                             dialog.setSize(new Dimension(sizeX/2, articleAbstract.getPreferredSize().height));
+                            dialog.setLocationRelativeTo(frame);
                             dialog.setVisible(true);
                         }
                     }
@@ -463,8 +483,8 @@ public class GUI {
             st = STATE.LSI;
             setNewProgress(st);
             lsiModel = LSIModel.loadFromFile(serializationDirectory, publications);
-            if (lsiModel == null) {
-                lsiModel = new LSIModel(publications);
+            if (lsiModel == null && svdsPath != null) {
+                lsiModel = new LSIModel(publications, svdsPath);
                 lsiModel.processPublications();
             }
             
@@ -487,7 +507,8 @@ public class GUI {
             mainPanel.removeAll();
             mainPanel.invalidate();
             mainPanel.revalidate();
-            mainPanel.repaint();            
+            mainPanel.repaint();
+            enableMenu();
         }
         
         
