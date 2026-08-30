@@ -6,7 +6,7 @@ PubMed search is a desktop application with graphical user interface for searchi
 The application uses baseline set of PubMed citation records in XML format available at [PubMed website](https://pubmed.ncbi.nlm.nih.gov/download/). To improve initial startup time, the parsed XML data together with models are serialized to disk and these serialized data are used in subsequent runs of the application.
 
 ### Build
-To build the application use `mvn compile` in root directory of the project. LSI model initialization uses single value decomposition that is  reasons computed using C library [svds-C](https://github.com/THU-numbda/svds-C) available on GitHub for performance. To use LSI model, [./svds_run_AMD.c](./svds_run_AMD.c) file needs to be compiled against [svds-C](https://github.com/THU-numbda/svds-C) before running the PubMed Search.
+To build the application use `mvn compile` in root directory of the project. LSI model initialization uses single value decomposition that is computed using C library [svds-C](https://github.com/THU-numbda/svds-C) available on GitHub for performance reasons. To use LSI model, [./svds_run_AMD.c](./svds_run_AMD.c) file needs to be compiled against [svds-C](https://github.com/THU-numbda/svds-C) before running the PubMed Search.
 
 ### Run
 Project needs to be run on JDK 21 or newer. To run the application use:`mvn exec:java -Dexec.args="arg0 arg1 arg2"` in root directory of the project.
