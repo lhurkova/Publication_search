@@ -19,7 +19,7 @@
 package cz.cuni.mff.hurkovalu.publication_search.models;
 
 import cz.cuni.mff.hurkovalu.publication_search.Publication;
-import cz.cuni.mff.hurkovalu.publication_search.aggregation.Filters;
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -31,6 +31,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.PrintStream;
 import java.io.Serializable;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -43,10 +44,10 @@ import java.util.logging.Logger;
 import org.apache.commons.math4.legacy.linear.Array2DRowRealMatrix;
 import org.apache.commons.math4.legacy.linear.ArrayRealVector;
 import org.apache.commons.math4.legacy.linear.DiagonalMatrix;
-import org.apache.commons.math4.legacy.linear.OpenMapRealMatrix;
 import org.apache.commons.math4.legacy.linear.RealMatrix;
 import org.apache.commons.math4.legacy.linear.RealVector;
 import java.nio.file.Path;
+import java.util.Scanner;
 
 /**
  * Class computing the Latent Semantic Indexing model.
@@ -76,7 +77,6 @@ public class LSIModel implements Model, Serializable {
      */
     @Override
     public void processPublications() {
-        OpenMapRealMatrix matrix = new OpenMapRealMatrix(2 * publications.size(), 20000);
         int termIndex = 0;
         int lastWords = 0;
         int recordsCount = 0;
@@ -110,7 +110,7 @@ public class LSIModel implements Model, Serializable {
             processedPublications++;
         }
         publicationsProcessed = true;
-        try (PrintStream output = new PrintStream(new File(SVD_LIB_PATH, MATRIX_FILE_NAME))) {
+        try (PrintStream output = new PrintStream(new BufferedOutputStream(new FileOutputStream(new File(SVD_LIB_PATH, MATRIX_FILE_NAME)), 1024*1024))) {
             for (Map.Entry<Integer, Map<Integer, Integer>> entry: docTermMatrix.entrySet()) {
                 for(Map.Entry<Integer, Integer> jVal: entry.getValue().entrySet()) {
                     output.println((entry.getKey()+1)+" "+(jVal.getKey()+1)+" "+jVal.getValue());
@@ -175,16 +175,17 @@ public class LSIModel implements Model, Serializable {
     }
 
     private RealMatrix readMatrix(File file) throws FileNotFoundException, IOException {
-        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(file), 1024*11024)) {
             int rowIndex = 0;
             String line = reader.readLine();
             String[] splitLine = line.split(" +");
             RealMatrix matrix = new Array2DRowRealMatrix(Integer.parseInt(splitLine[0]), Integer.parseInt(splitLine[1]));
             line = reader.readLine();
             while (line != null) {
-                splitLine = line.split(" +");
-                for (int colIndex = 0; colIndex < splitLine.length; colIndex++) {
-                    matrix.setEntry(rowIndex, colIndex, Double.parseDouble(splitLine[colIndex]));
+                int colIndex = 0;
+                Scanner s = new Scanner(line);
+                while(s.hasNextDouble()) {
+                    matrix.setEntry(rowIndex, colIndex++, s.nextDouble());
                 }
                 rowIndex++;
                 line = reader.readLine();
@@ -216,7 +217,9 @@ public class LSIModel implements Model, Serializable {
     }
     
     public void saveToFile(Path directory) {
-        try (FileOutputStream file = new FileOutputStream(directory.resolve("lsi.ser").toFile());
+        Path lsiStore = directory.resolve("lsi.ser");
+        if (Files.isReadable(lsiStore)) return;
+        try (FileOutputStream file = new FileOutputStream(lsiStore.toFile());
                 ObjectOutputStream out = new ObjectOutputStream(file)) {
             out.writeObject(this);
             System.out.println("LSI model has been serialized");

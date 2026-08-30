@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,6 +33,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -48,10 +50,16 @@ public class TFIDFModel implements Model, Serializable {
     private volatile int termsRead;
     private volatile int vectorsComputed;
     private volatile int termsCount = -1;
+    private boolean sorted = false;
     
 
     public TFIDFModel(List<Publication> publications) {
         this.publications = publications;
+    }
+    
+    TFIDFModel(List<Publication> publications, boolean sorted) {
+        this.publications = publications;
+        this.sorted = sorted;
     }
     
     /**
@@ -59,7 +67,7 @@ public class TFIDFModel implements Model, Serializable {
      */
     @Override
     public void processPublications() {
-        Map<String, int[]> termOccurences = new HashMap<>();
+        Map<String, int[]> termOccurences = sorted ? new TreeMap<>() : new HashMap<>();
         List<Map<String, Integer>> filteredAbstracts = new ArrayList<>();
         List<Map<String, Integer>> filteredTitles = new ArrayList<>();
         for (Publication p: publications) {
@@ -190,7 +198,9 @@ public class TFIDFModel implements Model, Serializable {
     }
     
     public void saveToFile(Path directory) {
-        try (FileOutputStream file = new FileOutputStream(directory.resolve("tfidf.ser").toFile());
+        Path tfStore = directory.resolve("tfidf.ser");
+        if (Files.isReadable(tfStore)) return;
+        try (FileOutputStream file = new FileOutputStream(tfStore.toFile());
                 ObjectOutputStream out = new ObjectOutputStream(file)) {
             out.writeObject(this);
             System.out.println("TF-IDF model has been serialized");

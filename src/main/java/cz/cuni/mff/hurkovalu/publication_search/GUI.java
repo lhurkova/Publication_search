@@ -37,7 +37,6 @@ import java.awt.event.MouseEvent;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
@@ -513,7 +512,6 @@ public class GUI {
         
         private void serialize(Path directory) {
             preprocessing.storePublications();
-            preprocessing.storeFilters();
             lsiModel.saveToFile(directory);
             tfidfModel.saveToFile(directory);
         }

@@ -45,7 +45,7 @@ public class PubMedHandler  extends DefaultHandler {
     private static final String PUB_DATE = "PubDate";
     private static final String YEAR = "Year";
     private static final String ARTICLE_TITLE = "ArticleTitle";
-    private static final String ABSTRACT = "Abstract";
+    private static final String ABSTRACT = "AbstractText";
     private static final String AUTHOR_LIST = "AuthorList";
     private static final String AUTHOR = "Author";
     private static final String LAST_NAME = "LastName";
