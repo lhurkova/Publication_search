@@ -20,11 +20,8 @@ package cz.cuni.mff.hurkovalu.preprocessing;
 
 import cz.cuni.mff.hurkovalu.publication_search.Author;
 import cz.cuni.mff.hurkovalu.publication_search.Publication;
-import cz.cuni.mff.hurkovalu.publication_search.aggregation.Filters;
-import edu.stanford.nlp.io.StringOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.file.Files;
@@ -49,7 +46,7 @@ public class PreprocessingTest {
     private static Author author = new Author("Singla", new String[] {"C", "L"});
     private static String journal = "Cell and tissue research";
     private static String title = "Fine structure of the adhesive pads of Gonionemus vertens.";
-    private static String pubAbstract = "The roles of these various cell organelles in adhesion and detachment process are discussed.";
+    private static String pubAbstract = "The roles of these various cell organelles in adhesion and detachment process are discussed. The roles of these various cell organelles in adhesion and detachment process are discussed.";
     private static String xmlContent = """
     <PubmedArticleSet>                                   
     <PubmedArticle>
@@ -85,7 +82,7 @@ public class PreprocessingTest {
           <MedlinePgn>395-402</MedlinePgn>
         </Pagination>
         <Abstract>
-          <AbstractText>The roles of these various cell organelles in adhesion and detachment process are discussed.</AbstractText>
+          <AbstractText>The roles of these various cell organelles in adhesion and detachment process are discussed. The roles of these various cell organelles in adhesion and detachment process are discussed.</AbstractText>
         </Abstract>
         <AuthorList CompleteYN="Y">
           <Author ValidYN="Y">

@@ -207,7 +207,7 @@ public class Publication implements Serializable {
      * @return true if all information about the publication is filled
      */
     public boolean isComplete() {
-        return ((pubAbstract != null) && (pubAbstract.length() > 300) && (year != 0) && (references != 0)
+        return ((pubAbstract != null) && (pubAbstract.length() > 150) && (year != 0) && (references != 0)
                 && (journal != null) && (authors != null) && (id != 0)
                 && (title != null) && (!title.isBlank()));
     }
