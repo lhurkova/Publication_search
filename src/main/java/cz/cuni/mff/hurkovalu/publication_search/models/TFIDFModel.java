@@ -29,14 +29,17 @@ import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.IntStream;
 
 /**
  * Class computing the TF-IDF model.
@@ -47,7 +50,7 @@ public class TFIDFModel implements Model, Serializable {
     private static final Logger LOGGER = Logger.getLogger(TFIDFModel.class.getName());
     private transient List<Publication> publications;
     private Map<String, WordInfo> wordVector;
-    private volatile int processedPublications;
+    private AtomicInteger processedPublications = new AtomicInteger(0);
     private volatile int termsRead;
     private volatile int vectorsComputed;
     private volatile int termsCount = -1;
@@ -72,13 +75,14 @@ public class TFIDFModel implements Model, Serializable {
     @Override
     public void processPublications() {
         Map<String, int[]> termOccurences = sorted ? new TreeMap<>() : new HashMap<>();
-        List<Map<String, Integer>> filteredAbstracts = new ArrayList<>();
-        List<Map<String, Integer>> filteredTitles = new ArrayList<>();
-        for (Publication p: publications) {
-            filteredAbstracts.add(processText(p.getPubAbstract(), termOccurences));
-            filteredTitles.add(processText(p.getTitle(), termOccurences));
-            processedPublications++;
-        }
+        List<Map<String, Integer>> filteredAbstracts = new ArrayList<>(Collections.nCopies(publications.size(), null));
+        List<Map<String, Integer>> filteredTitles = new ArrayList<>(Collections.nCopies(publications.size(), null));
+        IntStream.range(0, publications.size()).parallel().forEach(index -> {
+            Publication p = publications.get(index);
+            filteredAbstracts.set(index, processText(p.getPubAbstract(), termOccurences));
+            filteredTitles.set(index, processText(p.getTitle(), termOccurences));
+            processedPublications.getAndIncrement();
+        });
         
         int index = 0;
         int documentCount = filteredAbstracts.size() + filteredTitles.size();
@@ -94,6 +98,7 @@ public class TFIDFModel implements Model, Serializable {
             }
             termsRead++;
         }
+        System.out.println("Terms read "+termsRead);
         
         for (int i = 0; i < publications.size(); i++) {
             Publication publication = publications.get(i);
@@ -101,21 +106,24 @@ public class TFIDFModel implements Model, Serializable {
             publication.setTitleVector(computeTFIDF(filteredTitles.get(i)));
             vectorsComputed++;
         }
+        System.out.println("Vectors computed "+vectorsComputed);
     }
     
     private Map<String, Integer> processText(String text, Map<String, int[]> termOccurences) {
         List<String> words = WordUtils.getTokens(text);
         Map<String, Integer> documentWords = new HashMap<>();
         for (String word : words) {
-            if (!termOccurences.containsKey(word)) {
-                termOccurences.put(word, new int[2]);
+            synchronized (this) {
+                if (!termOccurences.containsKey(word)) {
+                    termOccurences.put(word, new int[2]);
+                }
+                termOccurences.get(word)[0]++;
+                if (!documentWords.containsKey(word)) {
+                    documentWords.put(word, 0);
+                    termOccurences.get(word)[1]++;
+                }
+                documentWords.put(word,(documentWords.get(word)+1));
             }
-            termOccurences.get(word)[0]++;
-            if (!documentWords.containsKey(word)) {
-                documentWords.put(word, 0);
-                termOccurences.get(word)[1]++;
-            }
-            documentWords.put(word,(documentWords.get(word)+1));
         }
         return documentWords;
     }
@@ -201,7 +209,7 @@ public class TFIDFModel implements Model, Serializable {
     @Override
     public int getProgress() {
         if (publications.isEmpty()) return 0;
-        return (80 * processedPublications)/publications.size() + (10 * vectorsComputed)/publications.size() + (10 * termsRead)/termsCount;
+        return (80 * processedPublications.get())/publications.size() + (10 * vectorsComputed)/publications.size() + (10 * termsRead)/termsCount;
     }
     
     /**

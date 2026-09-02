@@ -47,6 +47,7 @@ import org.apache.commons.math4.legacy.linear.RealMatrix;
 import org.apache.commons.math4.legacy.linear.RealVector;
 import java.nio.file.Path;
 import java.util.Scanner;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 import org.apache.commons.math4.legacy.exception.DimensionMismatchException;
 import org.apache.commons.math4.legacy.exception.MathArithmeticException;
@@ -68,7 +69,7 @@ public class LSIModel implements Model, Serializable {
     private transient Path svdScript;
     private transient Path svdLibPath;
     
-    private volatile int processedPublications;
+    private AtomicInteger processedPublications = new AtomicInteger(0);
     private volatile boolean publicationsProcessed = false;
     
     /**
@@ -87,38 +88,34 @@ public class LSIModel implements Model, Serializable {
      */
     @Override
     public void processPublications() {
-        int termIndex = 0;
-        int lastWords = 0;
-        int recordsCount = 0;
+        AtomicInteger termIndex = new AtomicInteger(0);
+        // int lastWords = 0;
+        AtomicInteger recordsCount = new AtomicInteger(0);
         Map<Integer, Map<Integer, Integer>> docTermMatrix = new TreeMap<>(); // first term than doc
-        for (int docIndex = 0; docIndex < publications.size(); docIndex++) {
+        IntStream.range(0, publications.size()).parallel().forEach(docIndex -> {
             Publication publication = publications.get(docIndex);
             Set<String> currWords = new HashSet<>();
             for (String token : WordUtils.getTokens(publication.getPubAbstract())) {
                 if (!currWords.contains(token)) {
-                    if (!wordVector.containsKey(token)) {
-                        wordVector.put(token, termIndex++);
-                    }
-                    putValueInMatrixMap(docTermMatrix, wordVector.get(token), docIndex * 2, 1);
-                    recordsCount++;
+                    addTerm(token, termIndex, docTermMatrix, docIndex * 2);
+                    recordsCount.getAndIncrement();
                     currWords.add(token);
                 }
             }
-
+            
+            currWords = new HashSet<>();
             for (String token : WordUtils.getTokens(publication.getTitle())) {
                 if (!currWords.contains(token)) {
-                    if (!wordVector.containsKey(token)) {
-                        wordVector.put(token, termIndex++);
-                    }
-                    putValueInMatrixMap(docTermMatrix, wordVector.get(token), docIndex * 2 + 1, 1);
-                    recordsCount++;
+                    addTerm(token, termIndex, docTermMatrix, docIndex * 2 + 1);
+                    recordsCount.getAndIncrement();
                     currWords.add(token);
                 }
             }
-            LOGGER.log(Level.FINE, "Done: {0} words {1}", new Object[]{docIndex, wordVector.size() - lastWords});
-            lastWords = wordVector.size();
-            processedPublications++;
-        }
+            // LOGGER.log(Level.FINE, "Done: {0} words {1}", new Object[]{docIndex, wordVector.size() - lastWords});
+            // lastWords = wordVector.size();
+            processedPublications.getAndIncrement();
+        });
+        
         publicationsProcessed = true;
         try (PrintStream output = new PrintStream(new BufferedOutputStream(new FileOutputStream(svdLibPath.resolve(MATRIX_FILE_NAME).toFile()), 1024*1024))) {
             for (Map.Entry<Integer, Map<Integer, Integer>> entry: docTermMatrix.entrySet()) {
@@ -128,8 +125,8 @@ public class LSIModel implements Model, Serializable {
             }
             output.flush();
             String scriptPath = svdScript.toAbsolutePath().toString();
-            ProcessBuilder pb = new ProcessBuilder(scriptPath, Integer.toString(termIndex),
-                    Integer.toString(2 * publications.size()), Integer.toString(recordsCount));
+            ProcessBuilder pb = new ProcessBuilder(scriptPath, Integer.toString(termIndex.get()),
+                    Integer.toString(2 * publications.size()), Integer.toString(recordsCount.get()));
             pb.inheritIO();
             pb.directory(new File(scriptPath).getParentFile());
             Process process = pb.start();
@@ -149,6 +146,13 @@ public class LSIModel implements Model, Serializable {
             LOGGER.log(Level.SEVERE, null, ex);
         }
 
+    }
+
+    private synchronized void addTerm(String token, AtomicInteger termIndex, Map<Integer, Map<Integer, Integer>> docTermMatrix, int index) {
+        if (!wordVector.containsKey(token)) {
+            wordVector.put(token, termIndex.getAndIncrement());
+        }
+        putValueInMatrixMap(docTermMatrix, wordVector.get(token), index, 1);
     }
 
     private void putValueInMatrixMap(Map<Integer, Map<Integer, Integer>> matrixMap, int i, int j, int val) {
@@ -229,7 +233,7 @@ public class LSIModel implements Model, Serializable {
     public int getProgress() {
         if (publicationsProcessed) return -1;
         if (publications.isEmpty()) return 0;
-        return (processedPublications * 100)/publications.size();
+        return (processedPublications.get() * 100)/publications.size();
     }
     
     /**

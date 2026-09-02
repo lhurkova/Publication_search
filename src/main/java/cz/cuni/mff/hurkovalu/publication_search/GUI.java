@@ -38,6 +38,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.BoxLayout;
@@ -510,7 +511,7 @@ public class GUI {
                 currModel = lsiModel;
                 progressTimer.stop();
                 serialize(serializationDirectory);
-            } catch (Exception e) {
+            } catch (Exception | Error e) {
                 LOGGER.log(Level.SEVERE, "doInBackground", e);
             }
             return null;
@@ -523,6 +524,11 @@ public class GUI {
             mainPanel.revalidate();
             mainPanel.repaint();
             enableMenu();
+            try {
+                get();
+            } catch (InterruptedException | ExecutionException ex) {
+                LOGGER.log(Level.SEVERE, "get", ex);
+            }
         }
         
         
