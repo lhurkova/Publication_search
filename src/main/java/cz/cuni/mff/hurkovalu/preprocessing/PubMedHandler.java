@@ -45,7 +45,8 @@ public class PubMedHandler  extends DefaultHandler {
     private static final String PUB_DATE = "PubDate";
     private static final String YEAR = "Year";
     private static final String ARTICLE_TITLE = "ArticleTitle";
-    private static final String ABSTRACT = "AbstractText";
+    private static final String ABSTRACT = "Abstract";
+    private static final String ABSTRACT_TEXT = "AbstractText";
     private static final String AUTHOR_LIST = "AuthorList";
     private static final String AUTHOR = "Author";
     private static final String LAST_NAME = "LastName";
@@ -79,6 +80,7 @@ public class PubMedHandler  extends DefaultHandler {
     
     private StringBuilder data;
     private StringBuilder htmlText;
+    private StringBuilder fullAbstract;
     
     private List<Publication> publications = new ArrayList<>();
     private Map<String, String> uniqueJournals = new HashMap<>();
@@ -167,6 +169,9 @@ public class PubMedHandler  extends DefaultHandler {
                 }
                 break;
             case ABSTRACT:
+                fullAbstract = new StringBuilder();
+                break;
+            case ABSTRACT_TEXT:
             case ARTICLE_TITLE:
                 htmlText = new StringBuilder();
                 break;
@@ -295,10 +300,14 @@ public class PubMedHandler  extends DefaultHandler {
                     currForeNames = data.toString().split(" ");
                 }
                 break;
+            case ABSTRACT_TEXT:
+                if (fullAbstract != null) fullAbstract.append(htmlText);
+                htmlText = null;
+                break;
             case ABSTRACT:
                 if (ARTICLE.equals(last_element)) {
-                    currPub.setPubAbstract(htmlText.toString());
-                    htmlText = null;
+                    currPub.setPubAbstract(fullAbstract.toString());
+                    fullAbstract = null;
                 }
                 break;
             case PUBMED_DATA:
