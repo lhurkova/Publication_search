@@ -188,6 +188,7 @@ public class TFIDFModel implements Model, Serializable {
     static public double computeCosSimilarity(Map<Integer, Double> vector1, Map<Integer, Double> vector2) {
         Set<Integer> intersection = new HashSet<>(vector1.keySet());
         intersection.retainAll(vector2.keySet());
+        if (intersection.isEmpty()) return 0;
         double scalarProduct = 0;
         for (Integer coord : intersection) {
             scalarProduct += vector1.get(coord) * vector2.get(coord);

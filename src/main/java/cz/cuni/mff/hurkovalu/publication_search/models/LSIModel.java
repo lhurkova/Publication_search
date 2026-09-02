@@ -178,16 +178,21 @@ public class LSIModel implements Model, Serializable {
     }
 
     private void computeQueryDis(int i, RealVector queryVector) throws MathArithmeticException, DimensionMismatchException, OutOfRangeException {
-        double absSim = 0;
-        if (docConceptMatrix.getColumnVector(2 * i).getNorm() != 0) {
-            absSim = Math.abs(queryVector.cosine(docConceptMatrix.getColumnVector(2 * i)));
+        if (queryVector.getNorm() == 0) {
+            publications.get(i).setFeture(0, 0);
+            publications.get(i).setFeture(0, 1);
+        } else {
+            double absSim = 0;
+            if (docConceptMatrix.getColumnVector(2 * i).getNorm() != 0) {
+                absSim = Math.abs(queryVector.cosine(docConceptMatrix.getColumnVector(2 * i)));
+            }
+            publications.get(i).setFeture(absSim, 0);
+            double titleSim = 0;
+            if (docConceptMatrix.getColumnVector(2 * i + 1).getNorm() != 0) {
+                titleSim = Math.abs(queryVector.cosine(docConceptMatrix.getColumnVector(2 * i + 1)));
+            }
+            publications.get(i).setFeture(titleSim, 1);
         }
-        publications.get(i).setFeture(absSim, 0);
-        double titleSim = 0;
-        if (docConceptMatrix.getColumnVector(2 * i + 1).getNorm() != 0) {
-            titleSim = Math.abs(queryVector.cosine(docConceptMatrix.getColumnVector(2 * i + 1)));
-        }
-        publications.get(i).setFeture(titleSim, 1);
     }
 
     private RealMatrix readMatrix(File file) throws FileNotFoundException, IOException {
